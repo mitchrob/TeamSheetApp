@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Player Appearances</title>
+  </head>
+  <body>
+{% extends 'base.html' %}
+{% block title %}Appearances{% endblock %}
+{% block content %}
+  <h1>Player Appearances</h1>
+  {% if players %}
+    <div class="table-responsive">
+      <table border="1" cellpadding="6">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Starts</th>
+          <th>Bench</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for name, stats in players %}
+          <tr>
+            <td><a href="{{ url_for('player_view') }}?name={{ name|urlencode }}">{{ name }}</a></td>
+            <td>{{ stats['starts'] }}</td>
+            <td>{{ stats['bench'] }}</td>
+            <td>{{ stats['total'] }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No data available yet.</p>
+  {% endif %}
+{% endblock %}
+  </body>
+</html>

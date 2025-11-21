@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}TeamsheetApp{% endblock %}</title>
+    <style>
+      /* Layout basics */
+      body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; }
+      .header { background: #2c3e50; color: #fff; padding: 10px 16px; display:flex; align-items:center; }
+      .brand { font-weight: bold; margin-right: 24px; }
+      .nav { display:flex; gap: 12px; align-items:center; flex-wrap:wrap; }
+      .nav a { color: #ecf0f1; text-decoration: none; padding: 6px 10px; border-radius:4px; }
+      .nav a:hover { background: rgba(236,240,241,0.08); }
+      .container { padding: 16px; }
+
+      /* Flash messages */
+      .flashes { margin-bottom: 12px; }
+      .flashes ul { list-style:none; padding:0; margin:0; }
+      .flashes li { padding:6px 8px; border-radius:4px; margin-bottom:6px; }
+      .flashes li strong { margin-right:6px; }
+      .flashes li.error { background:#fdecea; color:#611a15; }
+      .flashes li.success { background:#e9f7ef; color:#14532d; }
+      .flashes li.info { background:#e8f2ff; color:#0b3b66; }
+
+      /* Tables: full-width by default, and scroll on small screens */
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+      thead { background: #f0f0f0; }
+      .table-responsive { width:100%; overflow-x:auto; -webkit-overflow-scrolling: touch; }
+
+      /* Forms and inputs */
+      label { display:block; margin-bottom:6px; }
+      input[type=text], input[type=password], input[type=number], input, select, textarea { width:100%; box-sizing: border-box; padding:6px; }
+
+      /* Players grid (used on add page) */
+      .players { display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; }
+
+      /* Small screens adjustments */
+      @media (max-width: 800px) {
+        .header { padding: 10px; }
+        .brand { font-size: 16px; margin-right: 12px; }
+        .nav { gap: 8px; }
+        .container { padding: 10px; }
+        .players { grid-template-columns: 1fr; }
+        /* Make tables scroll horizontally rather than squashing */
+        table { display: table; }
+        th, td { white-space: nowrap; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="brand">Guildford Rugby — Teamsheets</div>
+      <div class="nav">
+        {% if session.get('admin') %}
+          <a href="{{ url_for('add') }}">Add Teamsheet</a>
+        {% endif %}
+        <a href="{{ url_for('stats') }}">Appearances</a>
+        <a href="{{ url_for('season_view') }}">Season Statistics</a>
+        <a href="{{ url_for('data_view') }}">Data</a>
+        {% if session.get('admin') %}
+          <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}">Admin login</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            <ul>
+            {% for category, msg in messages %}
+              <li class="{{ category|e }}"><strong>{{ category }}:</strong> {{ msg }}</li>
+            {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>

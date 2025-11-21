@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Season Statistics{% endblock %}
+{% block content %}
+  <h1>Season Statistics — {{ stats.season }}</h1>
+
+  <form method="get" action="{{ url_for('season_view') }}">
+    <label for="season">Season:</label>
+    <select name="season" id="season" onchange="this.form.submit()">
+      {% for s in stats.available_seasons %}
+        <option value="{{ s }}" {% if s == stats.season %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <h2>Summary</h2>
+  <div class="table-responsive">
+    <table>
+    <tr><th>Total matches</th><td>{{ stats.total_matches }}</td></tr>
+    <tr><th>Wins</th><td>{{ stats.wins }}</td></tr>
+    <tr><th>Draws</th><td>{{ stats.draws }}</td></tr>
+    <tr><th>Losses</th><td>{{ stats.losses }}</td></tr>
+    <tr><th>Win %</th><td>{{ "%.1f"|format(stats.win_pct) }}%</td></tr>
+    <tr><th>Points For</th><td>{{ stats.points_for }}</td></tr>
+    <tr><th>Points Against</th><td>{{ stats.points_against }}</td></tr>
+    <tr><th>Avg Points For</th><td>{{ stats.avg_points_for }}</td></tr>
+    <tr><th>Avg Points Against</th><td>{{ stats.avg_points_against }}</td></tr>
+    </table>
+  </div>
+
+  <h2>Players Used</h2>
+  <p><strong>Total players used:</strong> {{ stats.total_players_used }}</p>
+  <p><strong>Debuts:</strong> {{ stats.debut_count }} ({{ "%.1f"|format(stats.debut_pct) }}%)</p>
+  <p><strong>Previous season:</strong> {{ stats.previous_season or 'N/A' }}</p>
+  <p><strong>Leavers:</strong> {{ stats.leavers_count }} ({{ "%.1f"|format(stats.leavers_pct) }}%)</p>
+  {% if stats.leavers_count > 0 %}
+    <p><em>Leavers list:</em> {{ stats.leavers|join(', ') }}</p>
+  {% endif %}
+
+  <h2>Player Leaderboard</h2>
+  <div class="table-responsive">
+    <table>
+    <thead><tr><th>Player</th><th>Starts</th><th>Bench</th><th>Total</th></tr></thead>
+    <tbody>
+      {% for name, counts in stats.leaderboard %}
+        <tr>
+          <td><a href="{{ url_for('player_view') }}?name={{ name|urlencode }}">{{ name }}</a></td>
+          <td>{{ counts.starts }}</td>
+          <td>{{ counts.bench }}</td>
+          <td>{{ counts.total }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    </table>
+  </div>
+
+  <h2>Shirt Number Distribution</h2>
+  <div class="table-responsive">
+    <table>
+    <thead><tr><th>Shirt #</th><th>Count</th><th>%</th></tr></thead>
+    <tbody>
+      {% for item in stats.shirt_dist %}
+        <tr>
+          <td>{{ item.num }}</td>
+          <td>{{ item.count }}</td>
+          <td>{{ "%.1f"|format(item.pct) }}%</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    </table>
+  </div>
+
+  <h2>Matches</h2>
+  <div class="table-responsive">
+    <table>
+    <thead><tr><th>Date</th><th>Opposition</th><th>Location</th><th>Result</th><th>GF</th><th>GA</th></tr></thead>
+    <tbody>
+      {% for m in stats.match_list %}
+        <tr>
+          <td>{{ m.date_raw }}</td>
+          <td>{{ m.opposition }}</td>
+          <td>{{ m.location }}</td>
+          <td>{{ m.result }}</td>
+          <td>{{ m.guildford_points }}</td>
+          <td>{{ m.opposition_points }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    </table>
+  </div>
+
+{% endblock %}

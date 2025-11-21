@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Add Teamsheet{% endblock %}
+{% block content %}
+  <h1>Add Teamsheet</h1>
+  {# flashes shown in base.html #}
+
+  <form method="post" action="{{ url_for('add_post') }}">
+    <div>
+      <label>League: <input name="league" value="{{ defaults.league }}" /></label>
+      <label>Season: <input name="season" value="{{ defaults.season }}" /></label>
+      <label>Date: <input name="date" value="{{ defaults.date }}" /></label>
+      <label>Opposition: <input name="opposition" value="{{ defaults.opposition }}" /></label>
+      <label>Location: <input name="location" value="{{ defaults.location }}" /></label>
+      <label>Result: <input name="result" value="{{ defaults.result }}" /></label>
+      <label>Guildford Points: <input name="guildford_points" value="{{ defaults.guildford_points }}" /></label>
+      <label>Opposition Points: <input name="opposition_points" value="{{ defaults.opposition_points }}" /></label>
+    </div>
+
+    <h3>Players</h3>
+    <div class="players">
+      {% for i in range(1,21) %}
+        <label>Player {{ i }}: <input name="player{{ i }}" size="40" value="{{ defaults.players[i-1] }}"/></label>
+      {% endfor %}
+    </div>
+    <p><button type="submit">Add teamsheet</button></p>
+  </form>
+
+  {# navigation links are in the header ribbon; removed redundant links here #}
+{% endblock %}

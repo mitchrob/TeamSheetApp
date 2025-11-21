@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Teamsheet Uploader</title>
+  </head>
+  <body>
+    <h1>Paste a CSV Row</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul>
+        {% for category, msg in messages %}
+          <li><strong>{{ category }}:</strong> {{ msg }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <p>
+      <a href="{{ url_for('add') }}">Add teamsheet using form</a> •
+      <a href="{{ url_for('data_view') }}">View CSV table</a> •
+      or paste exactly one CSV row (same format as `GRFC_data.csv`):
+    </p>
+    <form action="{{ url_for('upload') }}" method="post">
+      <textarea name="row" rows="4" cols="120"></textarea>
+      <br>
+      <button type="submit">Upload raw CSV row</button>
+    </form>
+
+    <p><a href="{{ url_for('stats') }}">View player appearance stats</a></p>
+  </body>
+</html>
