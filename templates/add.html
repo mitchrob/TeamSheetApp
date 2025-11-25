@@ -22,7 +22,9 @@
         <label>Player {{ i }}: <input name="player{{ i }}" size="40" value="{{ defaults.players[i-1] }}"/></label>
       {% endfor %}
     </div>
-    <p><button type="submit">Add teamsheet</button></p>
+    <div class="form-actions">
+      <button type="submit" class="btn">Add teamsheet</button>
+    </div>
   </form>
 
   {# navigation links are in the header ribbon; removed redundant links here #}

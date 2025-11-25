@@ -1,96 +1,86 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Player - {{ stats.name }}</title>
-    <style>
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-      thead { background: #f0f0f0; }
-    </style>
-  </head>
-  <body>
-    <h1>{{ stats.name }}</h1>
-    <p>
-      <strong>1st appearance:</strong>
-      {% if stats.first_date %}{{ stats.first_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
-      &nbsp;|&nbsp;
-      <strong>Most recent:</strong>
-      {% if stats.last_date %}{{ stats.last_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
-    </p>
-    <p>
-      <strong>Starts:</strong> {{ stats.starts }} &nbsp;|&nbsp;
-      <strong>Bench:</strong> {{ stats.bench }} &nbsp;|&nbsp;
-      <strong>Total:</strong> {{ stats.total }} &nbsp;|&nbsp;
-      <strong>Win %:</strong> {{ '%.1f' % stats.win_pct }}%
-    </p>
+{% extends 'base.html' %}
+{% block title %}Player - {{ stats.name }}{% endblock %}
+{% block content %}
+  <h1>{{ stats.name }}</h1>
+  <p>
+    <strong>1st appearance:</strong>
+    {% if stats.first_date %}{{ stats.first_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
+    &nbsp;|&nbsp;
+    <strong>Most recent:</strong>
+    {% if stats.last_date %}{{ stats.last_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
+  </p>
+  <p>
+    <strong>Starts:</strong> {{ stats.starts }} &nbsp;|&nbsp;
+    <strong>Bench:</strong> {{ stats.bench }} &nbsp;|&nbsp;
+    <strong>Total:</strong> {{ stats.total }} &nbsp;|&nbsp;
+    <strong>Win %:</strong> {{ '%.1f' % stats.win_pct }}%
+  </p>
 
-    <h2>Shirt number distribution</h2>
-    {% if stats.by_shirt %}
-      <div class="table-responsive">
-        <table>
-        <thead>
-          <tr><th>Shirt</th><th>Appearances</th><th>% of total</th></tr>
-        </thead>
-        <tbody>
-          {% for s in stats.by_shirt %}
-            <tr>
-              <td>
-                {% if s.num > 15 %}
-                  {{ s.num }} (bench)
-                {% else %}
-                  {{ s.num }}
-                {% endif %}
-              </td>
-              <td>{{ s.count }}</td>
-              <td>{{ '%.1f' % s.pct }}%</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-        </table>
-      </div>
-    {% else %}
-      <p>No shirt-number data available.</p>
-    {% endif %}
-
-    <h2>All teamsheets containing {{ stats.name }}</h2>
+  <h2>Shirt number distribution</h2>
+  {% if stats.by_shirt %}
     <div class="table-responsive">
       <table>
       <thead>
-        <tr>
-          <th>Date</th>
-          <th>Season</th>
-          <th>Opposition</th>
-          <th>Location</th>
-          <th>Result</th>
-          <th>Guildford Points</th>
-          <th>Opposition Points</th>
-          <th>Players</th>
-        </tr>
+        <tr><th>Shirt</th><th>Appearances</th><th>% of total</th></tr>
       </thead>
       <tbody>
-        {% for a in stats.appearances %}
+        {% for s in stats.by_shirt %}
           <tr>
-            <td>{% if a.date %}{{ a.date.strftime('%d/%m/%Y') }}{% else %}{{ a.date_raw }}{% endif %}</td>
-            <td>{{ a.row[1] if a.row|length > 1 else '' }}</td>
-            <td>{{ a.row[3] if a.row|length > 3 else '' }}</td>
-            <td>{{ a.row[4] if a.row|length > 4 else '' }}</td>
-            <td>{{ a.result }}</td>
-            <td>{{ a.guildford_points }}</td>
-            <td>{{ a.opposition_points }}</td>
             <td>
-              {% for p in a.players %}
-                {% if p %}
-                  <div>{{ p }}</div>
-                {% endif %}
-              {% endfor %}
+              {% if s.num > 15 %}
+                {{ s.num }} (bench)
+              {% else %}
+                {{ s.num }}
+              {% endif %}
             </td>
+            <td>{{ s.count }}</td>
+            <td>{{ '%.1f' % s.pct }}%</td>
           </tr>
         {% endfor %}
       </tbody>
       </table>
     </div>
+  {% else %}
+    <p>No shirt-number data available.</p>
+  {% endif %}
 
-    <p><a href="{{ url_for('stats') }}">Back to stats</a> • <a href="{{ url_for('data_view') }}">View data</a></p>
-  </body>
-</html>
+  <h2>All teamsheets containing {{ stats.name }}</h2>
+  <div class="table-responsive">
+    <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Season</th>
+        <th>Opposition</th>
+        <th>Location</th>
+        <th>Result</th>
+        <th>Guildford Points</th>
+        <th>Opposition Points</th>
+        <th>Players</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in stats.appearances %}
+        <tr>
+          <td>{% if a.date %}{{ a.date.strftime('%d/%m/%Y') }}{% else %}{{ a.date_raw }}{% endif %}</td>
+          <td>{{ a.row[1] if a.row|length > 1 else '' }}</td>
+          <td>{{ a.row[3] if a.row|length > 3 else '' }}</td>
+          <td>{{ a.row[4] if a.row|length > 4 else '' }}</td>
+          <td>{{ a.result }}</td>
+          <td>{{ a.guildford_points }}</td>
+          <td>{{ a.opposition_points }}</td>
+          <td>
+            {% for p in a.players %}
+              {% if p %}
+                <div>{{ p }}</div>
+              {% endif %}
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    </table>
+  </div>
+
+  <p><a href="{{ url_for('stats') }}">Back to stats</a> • <a href="{{ url_for('data_view') }}">View data</a></p>
+{% endblock %}

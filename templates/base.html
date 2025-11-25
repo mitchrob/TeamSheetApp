@@ -34,6 +34,11 @@
       label { display:block; margin-bottom:6px; }
       input[type=text], input[type=password], input[type=number], input, select, textarea { width:100%; box-sizing: border-box; padding:6px; }
 
+      /* Buttons */
+      .btn { display:inline-block; padding:8px 12px; border-radius:6px; background:#2c3e50; color:#fff; border:0; cursor:pointer; }
+      .btn.secondary { background:#6c757d; }
+      .form-actions { margin-top:12px; }
+
       /* Players grid (used on add page) */
       .players { display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; }
 
@@ -51,6 +56,7 @@
         .nav { display:none; flex-direction:column; background:#2c3e50; padding:10px; position:absolute; right:10px; top:56px; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
         .nav.open { display:flex; }
         .menu-button { display:inline-block; }
+        .btn { width:100%; padding:12px; font-size:16px; }
       }
     </style>
   </head>
