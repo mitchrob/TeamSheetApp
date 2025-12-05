@@ -76,7 +76,7 @@
     <tbody>
       {% for m in stats.match_list %}
         <tr>
-          <td>{{ m.date_raw }}</td>
+          <td>{{ m.date.strftime('%d/%m/%Y') }}</td>
           <td>{{ m.opposition }}</td>
           <td>{{ m.location }}</td>
           <td>{{ m.result }}</td>

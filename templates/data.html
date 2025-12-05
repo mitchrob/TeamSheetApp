@@ -1,100 +1,44 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 {% block title %}Teamsheet Data{% endblock %}
 {% block content %}
-  <h1>Teamsheet Data</h1>
-    {% if header %}
-      <div class="table-responsive">
-        <table id="data-table">
-      <thead>
-        <tr>
-          {% for h in header %}
-            <th class="nowrap" data-col-index="{{ loop.index0 }}">{{ h }} <span class="sort-indicator"></span></th>
-          {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-          <tr>
-            {% for cell in row %}
-              {% set col_index = loop.index0 %}
-              <td>
-                {% if col_index >= player_start and cell %}
-                  <a href="{{ url_for('player_view') }}?name={{ cell|urlencode }}">{{ cell }}</a>
-                {% else %}
-                  {{ cell }}
-                {% endif %}
-              </td>
-            {% endfor %}
-          </tr>
-        {% endfor %}
-      </tbody>
+<div class="container">
+    <h2>All Match Data</h2>
+    <p>This table shows all match data stored in the database. You can edit or delete records from here.</p>
+
+    {% if matches %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Season</th>
+                    <th>Opposition</th>
+                    <th>Result</th>
+                    <th>Score</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in matches %}
+                <tr>
+                    <td>{{ match.date.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ match.season }}</td>
+                    <td>{{ match.opposition }}</td>
+                    <td>{{ match.result }}</td>
+                    <td>{{ match.guildford_points if match.guildford_points is not none else 'N/A' }} - {{ match.opposition_points if match.opposition_points is not none else 'N/A' }}</td>
+                    <td>
+                        <a href="{{ url_for('edit_match', match_id=match.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form action="{{ url_for('delete_match', match_id=match.id) }}" method="post" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this match? This action cannot be undone.');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
-      </div>
-    <script>
-      (function(){
-        const table = document.getElementById('data-table');
-        if (!table) return;
-        const tbody = table.tBodies[0];
-        const headers = table.tHead.querySelectorAll('th');
-
-        function parseDateDMY(s) {
-          const t = (s||'').trim();
-          const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-          if (!m) return null;
-          let day = parseInt(m[1], 10);
-          let month = parseInt(m[2], 10) - 1;
-          let year = parseInt(m[3], 10);
-          if (year < 100) { year += (year >= 70 ? 1900 : 2000); }
-          return new Date(year, month, day).getTime();
-        }
-
-        function tryNumber(s) {
-          const n = parseFloat((s||'').replace(/[,\s]+/g, ''));
-          return isFinite(n) ? n : null;
-        }
-
-        function getCellValue(row, idx) {
-          const cell = row.cells[idx];
-          return cell ? cell.innerText.trim() : '';
-        }
-
-        headers.forEach((th, idx) => {
-          th.style.cursor = 'pointer';
-          th.addEventListener('click', () => {
-            const col = idx;
-            const current = th.dataset.sortDir === 'asc' ? 'asc' : (th.dataset.sortDir === 'desc' ? 'desc' : null);
-            const dir = current === 'asc' ? 'desc' : 'asc';
-
-            headers.forEach(h => { h.dataset.sortDir = ''; const ind=h.querySelector('.sort-indicator'); if(ind) ind.textContent=''; });
-            th.dataset.sortDir = dir;
-            const ind = th.querySelector('.sort-indicator'); if (ind) ind.textContent = dir === 'asc' ? ' ▲' : ' ▼';
-
-            const rows = Array.from(tbody.rows);
-            rows.sort((a,b) => {
-              const va = getCellValue(a, col);
-              const vb = getCellValue(b, col);
-              const da = parseDateDMY(va);
-              const db = parseDateDMY(vb);
-              if (da !== null && db !== null) {
-                return dir === 'asc' ? da - db : db - da;
-              }
-              const na = tryNumber(va);
-              const nb = tryNumber(vb);
-              if (na !== null && nb !== null) {
-                return dir === 'asc' ? na - nb : nb - na;
-              }
-              const sa = va.toLowerCase();
-              const sb = vb.toLowerCase();
-              if (sa < sb) return dir === 'asc' ? -1 : 1;
-              if (sa > sb) return dir === 'asc' ? 1 : -1;
-              return 0;
-            });
-            rows.forEach(r => tbody.appendChild(r));
-          });
-        });
-      })();
-    </script>
-  {% else %}
-    <p>No CSV data found.</p>
-  {% endif %}
+    </div>
+    {% else %}
+    <p>No match data found in the database.</p>
+    {% endif %}
+</div>
 {% endblock %}

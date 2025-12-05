@@ -14,12 +14,12 @@
         </tr>
       </thead>
       <tbody>
-        {% for name, stats in players %}
+        {% for player in players %}
           <tr>
-            <td><a href="{{ url_for('player_view') }}?name={{ name|urlencode }}">{{ name }}</a></td>
-            <td>{{ stats['starts'] }}</td>
-            <td>{{ stats['bench'] }}</td>
-            <td>{{ stats['total'] }}</td>
+            <td><a href="{{ url_for('player_view') }}?name={{ player.name|urlencode }}">{{ player.name }}</a></td>
+            <td>{{ player.starts }}</td>
+            <td>{{ player.bench }}</td>
+            <td>{{ player.total }}</td>
           </tr>
         {% endfor %}
       </tbody>
