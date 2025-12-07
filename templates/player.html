@@ -54,24 +54,27 @@
         <th>Opposition</th>
         <th>Location</th>
         <th>Result</th>
-        <th>Score</th>
-        <th>Position</th>
+        <th>Guildford Points</th>
+        <th>Opposition Points</th>
+        <th>Players</th>
       </tr>
     </thead>
     <tbody>
       {% for a in stats.appearances %}
         <tr>
-          <td>{{ a.match.date.strftime('%d/%m/%Y') }}</td>
-          <td>{{ a.match.season }}</td>
-          <td>{{ a.match.opposition }}</td>
-          <td>{{ a.match.location }}</td>
-          <td>{{ a.match.result }}</td>
-          <td>{{ a.match.guildford_points if a.match.guildford_points is not none else 'N/A' }} - {{ a.match.opposition_points if a.match.opposition_points is not none else 'N/A' }}</td>
+          <td>{% if a.date %}{{ a.date.strftime('%d/%m/%Y') }}{% else %}{{ a.date_raw }}{% endif %}</td>
+          <td>{{ a.row[1] if a.row|length > 1 else '' }}</td>
+          <td>{{ a.row[3] if a.row|length > 3 else '' }}</td>
+          <td>{{ a.row[4] if a.row|length > 4 else '' }}</td>
+          <td>{{ a.result }}</td>
+          <td>{{ a.guildford_points }}</td>
+          <td>{{ a.opposition_points }}</td>
           <td>
-            {{ a.position }}
-            {% if a.position > 15 %}
-              (Bench)
-            {% endif %}
+            {% for p in a.players %}
+              {% if p %}
+                <div>{{ p }}</div>
+              {% endif %}
+            {% endfor %}
           </td>
         </tr>
       {% endfor %}

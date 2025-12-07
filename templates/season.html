@@ -13,9 +13,6 @@
   </form>
 
   <h2>Summary</h2>
-  <div style="max-width: 300px; margin: 20px auto;">
-    <canvas id="winLossChart"></canvas>
-  </div>
   <div class="table-responsive">
     <table>
     <tr><th>Total matches</th><td>{{ stats.total_matches }}</td></tr>
@@ -29,39 +26,6 @@
     <tr><th>Avg Points Against</th><td>{{ stats.avg_points_against }}</td></tr>
     </table>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    const ctx = document.getElementById('winLossChart');
-    new Chart(ctx, {
-      type: 'pie',
-      data: {
-        labels: ['Wins', 'Losses', 'Draws'],
-        datasets: [{
-          label: 'Match Outcomes',
-          data: [{{ stats.wins }}, {{ stats.losses }}, {{ stats.draws }}],
-          backgroundColor: [
-            'rgba(40, 167, 69, 0.7)',
-            'rgba(220, 53, 69, 0.7)',
-            'rgba(255, 193, 7, 0.7)'
-          ],
-          borderColor: [
-            'rgba(40, 167, 69, 1)',
-            'rgba(220, 53, 69, 1)',
-            'rgba(255, 193, 7, 1)'
-          ],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-          }
-        }
-      }
-    });
-  </script>
 
   <h2>Players Used</h2>
   <p><strong>Total players used:</strong> {{ stats.total_players_used }}</p>
@@ -112,7 +76,7 @@
     <tbody>
       {% for m in stats.match_list %}
         <tr>
-          <td>{{ m.date.strftime('%d/%m/%Y') }}</td>
+          <td>{{ m.date_raw }}</td>
           <td>{{ m.opposition }}</td>
           <td>{{ m.location }}</td>
           <td>{{ m.result }}</td>

@@ -30,6 +30,11 @@
       padding-left: 20px;
       margin: 0;
     }
+    .actions {
+      margin-top: 12px;
+      border-top: 1px solid #eee;
+      padding-top: 12px;
+    }
   </style>
 
   <h1>Potential Duplicate Players</h1>
@@ -52,6 +57,25 @@
                 <strong>Starts:</strong> {{ player_stats.starts }} | 
                 <strong>Bench:</strong> {{ player_stats.bench }}
               </p>
+              <div class="actions">
+                <form action="{{ url_for('merge_players') }}" method="post" onsubmit="return confirm('Are you sure you want to merge {{ player_stats.name }} into the selected player? This action cannot be undone.');">
+                  <input type="hidden" name="source_name" value="{{ player_stats.name }}">
+                  <select name="target_name">
+                    <option value="">Merge into...</option>
+                    {% for other_player in group %}
+                      {% if other_player.name != player_stats.name %}
+                        <option value="{{ other_player.name }}">{{ other_player.name }}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn" style="width:auto; padding: 4px 8px;">Merge</button>
+                </form>
+                <form action="{{ url_for('ignore_pair') }}" method="post" style="margin-top: 8px;">
+                    <input type="hidden" name="player1_name" value="{{ group[0].name }}">
+                    <input type="hidden" name="player2_name" value="{{ group[1].name }}">
+                    <button type="submit" class="btn secondary" style="width:auto; padding: 4px 8px;">Ignore This Pair</button>
+                </form>
+              </div>
               <strong>Appearances:</strong>
               <ul>
                 {% for appearance in player_stats.appearances %}

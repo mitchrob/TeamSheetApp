@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}TeamsheetApp{% endblock %}</title>
     <style>
-      @import url("https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css");
       /* Layout basics */
       body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; }
       .header { background: #2c3e50; color: #fff; padding: 10px 16px; display:flex; align-items:center; justify-content:space-between; }
@@ -70,7 +69,6 @@
       <div class="nav" id="mainNav">
         {% if session.get('admin') %}
           <a href="{{ url_for('add') }}">Add Teamsheet</a>
-          <a href="{{ url_for('view_duplicates') }}">Duplicates</a>
         {% endif %}
         <a href="{{ url_for('stats') }}">Appearances</a>
         <a href="{{ url_for('season_view') }}">Season Statistics</a>
@@ -96,13 +94,6 @@
       {% endwith %}
       {% block content %}{% endblock %}
     </div>
-      <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
-      <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-      <script>
-        $(document).ready(function() {
-          $('.datatable').DataTable();
-        });
-      </script>
       <script>
         (function(){
           var btn = document.getElementById('menuToggle');
