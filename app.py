@@ -7,6 +7,7 @@ import io
 import os
 from collections import Counter
 from datetime import datetime
+from thefuzz import process as fuzz_process
 
 app = Flask(__name__)
 # Use an environment-provided SECRET_KEY in production (recommended).
@@ -83,6 +84,26 @@ def admin_required(f):
         return f(*args, **kwargs)
     return wrapper
 
+def find_potential_duplicates(player_names_to_check, all_player_names, threshold=90):
+    """
+    Checks a list of names against a list of known names for potential duplicates.
+
+    Returns:
+        A list of error messages for names that are not exact matches but are
+        very similar to existing names.
+    """
+    errors = []
+    known_names_set = set(all_player_names)
+
+    for name in player_names_to_check:
+        if name not in known_names_set:
+            # Find the best match from the list of all known players
+            if all_player_names:
+                best_match, score = fuzz_process.extractOne(name, all_player_names)
+                if score >= threshold:
+                    errors.append(f"'{name}' is not an existing player. Did you mean '{best_match}'?")
+    
+    return errors
 
 
 @app.route('/', methods=['GET'])
@@ -132,6 +153,13 @@ def add_post():
         flash(f'The teamsheet contains duplicate players: {", ".join(duplicates)}. Please correct and resubmit.', 'error')
         return redirect(url_for('add'))
 
+    # Fuzzy match validation against existing players
+    all_player_names_in_db = [p.name for p in Player.query.all()]
+    fuzzy_errors = find_potential_duplicates(non_empty_players, all_player_names_in_db)
+    if fuzzy_errors:
+        for error in fuzzy_errors:
+            flash(error, 'error')
+        return redirect(url_for('add'))
     try:
         new_match = Match(
             league=league,
@@ -235,6 +263,14 @@ def edit_match(match_id):
         duplicates = [name for name, count in player_counts.items() if count > 1]
         if duplicates:
             flash(f'The teamsheet contains duplicate players: {", ".join(duplicates)}. Please correct and resubmit.', 'error')
+            return redirect(url_for('edit_match', match_id=match_id))
+
+        # Fuzzy match validation against existing players
+        all_player_names_in_db = [p.name for p in Player.query.all()]
+        fuzzy_errors = find_potential_duplicates(non_empty_players, all_player_names_in_db)
+        if fuzzy_errors:
+            for error in fuzzy_errors:
+                flash(error, 'error')
             return redirect(url_for('edit_match', match_id=match_id))
 
         for i, name in enumerate(player_names):
