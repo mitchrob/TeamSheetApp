@@ -4,7 +4,7 @@
   <h1>Player Appearances</h1>
   {% if players %}
     <div class="table-responsive">
-      <table>
+      <table class="datatable">
       <thead>
         <tr>
           <th>Player</th>
@@ -17,9 +17,9 @@
         {% for player in players %}
           <tr>
             <td><a href="{{ url_for('player_view') }}?name={{ player.name|urlencode }}">{{ player.name }}</a></td>
-            <td>{{ player.starts }}</td>
-            <td>{{ player.bench }}</td>
-            <td>{{ player.total }}</td>
+            <td>{{ player.starts or 0 }}</td>
+            <td>{{ player.bench or 0 }}</td>
+            <td>{{ player.total or 0 }}</td>
           </tr>
         {% endfor %}
       </tbody>

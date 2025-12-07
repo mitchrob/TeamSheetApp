@@ -167,20 +167,41 @@ def add_post():
 
 @app.route('/stats', methods=['GET'])
 def stats():
+    sort_by = request.args.get('sort', 'total')
+    order = request.args.get('order', 'desc')
+
     starts_case = case((Appearance.position <= 15, 1), else_=0)
     bench_case = case((Appearance.position > 15, 1), else_=0)
 
-    player_stats = db.session.query(
+    # Define columns for querying and sorting
+    total_col = func.count(Appearance.id).label('total')
+    starts_col = func.sum(starts_case).label('starts')
+    bench_col = func.sum(bench_case).label('bench')
+
+    query = db.session.query(
         Player.name,
-        func.count(Appearance.id).label('total'),
-        func.sum(starts_case).label('starts'),
-        func.sum(bench_case).label('bench')
+        total_col,
+        starts_col,
+        bench_col
     ).join(Appearance).group_by(Player.name).all()
 
-    sorted_players = sorted(
-        player_stats, key=lambda p: (-p.total, -p.starts, p.name)
-    )
-    return render_template('stats.html', players=sorted_players)
+    # Map string parameter to a valid SQLAlchemy sortable column
+    sort_map = {
+        'name': Player.name,
+        'total': total_col,
+        'starts': starts_col,
+        'bench': bench_col,
+    }
+    sort_column = sort_map.get(sort_by, total_col)
+
+    # Apply sorting to the query
+    if order == 'asc':
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    player_stats = query.all()
+    return render_template('stats.html', players=player_stats, sort_by=sort_by, order=order)
 
 
 @app.route('/data', methods=['GET'])
