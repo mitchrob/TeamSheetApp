@@ -124,6 +124,14 @@ def add_post():
         flash('Invalid date format. Please use dd/mm/yyyy.', 'error')
         return redirect(url_for('add'))
 
+    # Validate for duplicate players
+    non_empty_players = [name for name in player_names if name]
+    player_counts = Counter(non_empty_players)
+    duplicates = [name for name, count in player_counts.items() if count > 1]
+    if duplicates:
+        flash(f'The teamsheet contains duplicate players: {", ".join(duplicates)}. Please correct and resubmit.', 'error')
+        return redirect(url_for('add'))
+
     try:
         new_match = Match(
             league=league,
@@ -200,6 +208,14 @@ def edit_match(match_id):
         Appearance.query.filter_by(match_id=match.id).delete()
 
         player_names = [request.form.get(f'player{i}', '').strip() for i in range(1, 21)]
+        # Validate for duplicate players
+        non_empty_players = [name for name in player_names if name]
+        player_counts = Counter(non_empty_players)
+        duplicates = [name for name, count in player_counts.items() if count > 1]
+        if duplicates:
+            flash(f'The teamsheet contains duplicate players: {", ".join(duplicates)}. Please correct and resubmit.', 'error')
+            return redirect(url_for('edit_match', match_id=match_id))
+
         for i, name in enumerate(player_names):
             if not name:
                 continue
