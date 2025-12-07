@@ -339,25 +339,28 @@ def view_duplicates():
     # We will show the score in the UI so the admin can judge.
     threshold = 80 
     players = Player.query.order_by(Player.name).all()
-    player_names = [p.name for p in players]
+    all_player_names = [p.name for p in players]
     
-    duplicate_groups = []
+    duplicate_groups_of_names = []
     processed_names = set()
 
-    for name in player_names:
+    for name in all_player_names:
         if name in processed_names:
             continue
         
         # Find all names that are similar to the current name
-        matches = fuzz_process.extract(name, player_names, scorer=fuzz.token_sort_ratio)
+        matches = fuzz_process.extract(name, all_player_names, scorer=fuzz.token_sort_ratio)
         
         current_group = {m[0] for m in matches if m[1] >= threshold}
         
         if len(current_group) > 1:
-            duplicate_groups.append(sorted(list(current_group)))
+            duplicate_groups_of_names.append(sorted(list(current_group)))
             processed_names.update(current_group)
             
-    return render_template('duplicates.html', duplicate_groups=duplicate_groups)
+    # For each group, get the detailed stats for each player
+    detailed_groups = [[get_player_stats(name) for name in group] for group in duplicate_groups_of_names]
+            
+    return render_template('duplicates.html', detailed_groups=detailed_groups)
 
 def _collect_seasons(rows):
     # Query distinct seasons from the Match table
