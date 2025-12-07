@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Potential Duplicates{% endblock %}
+{% block content %}
+  <h1>Potential Duplicate Players</h1>
+  <p>
+    The following groups of players have very similar names and may be duplicates.
+    Review each group and consider merging them by using the "Edit" functionality on the 
+    <a href="{{ url_for('data_view') }}">Data page</a> to standardize the names.
+  </p>
+
+  {% if duplicate_groups %}
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Potential Duplicate Group</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for group in duplicate_groups %}
+            <tr>
+              <td>{{ group|join(', ') }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No potential duplicates found with the current similarity threshold.</p>
+  {% endif %}
+{% endblock %}

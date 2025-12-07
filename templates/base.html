@@ -70,6 +70,7 @@
       <div class="nav" id="mainNav">
         {% if session.get('admin') %}
           <a href="{{ url_for('add') }}">Add Teamsheet</a>
+          <a href="{{ url_for('view_duplicates') }}">Duplicates</a>
         {% endif %}
         <a href="{{ url_for('stats') }}">Appearances</a>
         <a href="{{ url_for('season_view') }}">Season Statistics</a>

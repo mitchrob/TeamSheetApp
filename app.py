@@ -7,7 +7,7 @@ import io
 import os
 from collections import Counter
 from datetime import datetime
-from thefuzz import process as fuzz_process
+from thefuzz import process as fuzz_process, fuzz
 
 app = Flask(__name__)
 # Use an environment-provided SECRET_KEY in production (recommended).
@@ -329,6 +329,35 @@ def logout():
     flash('Logged out', 'info')
     return redirect(url_for('index'))
 
+@app.route('/duplicates')
+@admin_required
+def view_duplicates():
+    """
+    Finds and displays potential duplicate players in the database.
+    """
+    # A lower threshold is better for finding groups.
+    # We will show the score in the UI so the admin can judge.
+    threshold = 80 
+    players = Player.query.order_by(Player.name).all()
+    player_names = [p.name for p in players]
+    
+    duplicate_groups = []
+    processed_names = set()
+
+    for name in player_names:
+        if name in processed_names:
+            continue
+        
+        # Find all names that are similar to the current name
+        matches = fuzz_process.extract(name, player_names, scorer=fuzz.token_sort_ratio)
+        
+        current_group = {m[0] for m in matches if m[1] >= threshold}
+        
+        if len(current_group) > 1:
+            duplicate_groups.append(sorted(list(current_group)))
+            processed_names.update(current_group)
+            
+    return render_template('duplicates.html', duplicate_groups=duplicate_groups)
 
 def _collect_seasons(rows):
     # Query distinct seasons from the Match table
