@@ -183,7 +183,7 @@ def stats():
         total_col,
         starts_col,
         bench_col
-    ).join(Appearance).group_by(Player.name).all()
+    ).join(Appearance).group_by(Player.name)
 
     # Map string parameter to a valid SQLAlchemy sortable column
     sort_map = {
