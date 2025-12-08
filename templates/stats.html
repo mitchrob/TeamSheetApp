@@ -9,7 +9,7 @@
       </p>
     {% endif %}
     <div class="table-responsive">
-      <table class="datatable">
+      <table class="table table-hover datatable" style="width:100%">
       <thead>
         <tr>
           <th>Player</th>
@@ -33,4 +33,12 @@
   {% else %}
     <p>No data available yet.</p>
   {% endif %}
+<script>
+  $(document).ready(function() {
+    $('.datatable').DataTable({
+      "order": [[ 3, "desc" ]], // Default sort by the fourth column (Total), descending
+      "pageLength": 100
+    });
+  });
+</script>
 {% endblock %}

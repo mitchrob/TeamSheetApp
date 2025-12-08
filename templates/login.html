@@ -3,16 +3,16 @@
 {% block content %}
   <h1>Admin Login</h1>
   {# flashes shown in base.html #}
-  <form method="post" action="{{ url_for('login', next=request.args.get('next') or '') }}">
+  <form method="post" action="{{ url_for('login', next=request.args.get('next') or '') }}" style="max-width: 400px;">
     <input type="hidden" name="next" value="{{ request.args.get('next') or '' }}">
-    <div>
-      <label>Username: <input type="text" name="username" autofocus></label>
+    <div class="mb-3">
+      <label for="username" class="form-label">Username</label>
+      <input type="text" class="form-control" id="username" name="username" autofocus>
     </div>
-    <div>
-      <label>Password: <input type="password" name="password"></label>
+    <div class="mb-3">
+      <label for="password" class="form-label">Password</label>
+      <input type="password" class="form-control" id="password" name="password">
     </div>
-    <div>
-      <button type="submit">Login</button>
-    </div>
+    <button type="submit" class="btn btn-primary">Login</button>
   </form>
 {% endblock %}

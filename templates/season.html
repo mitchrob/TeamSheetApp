@@ -4,8 +4,8 @@
   <h1>Season Statistics — {{ stats.season }}</h1>
 
   <form method="get" action="{{ url_for('season_view') }}">
-    <label for="season">Season:</label>
-    <select name="season" id="season" onchange="this.form.submit()">
+    <label for="season" class="form-label">Select Season:</label>
+    <select name="season" id="season" class="form-select" style="max-width: 200px;" onchange="this.form.submit()">
       {% for s in stats.available_seasons %}
         <option value="{{ s }}" {% if s == stats.season %}selected{% endif %}>{{ s }}</option>
       {% endfor %}
@@ -17,7 +17,7 @@
     <canvas id="winLossChart"></canvas>
   </div>
   <div class="table-responsive">
-    <table>
+    <table class="table" style="max-width: 500px;">
     <tr><th>Total matches</th><td>{{ stats.total_matches }}</td></tr>
     <tr><th>Wins</th><td>{{ stats.wins }}</td></tr>
     <tr><th>Draws</th><td>{{ stats.draws }}</td></tr>
@@ -74,7 +74,7 @@
 
   <h2>Player Leaderboard</h2>
   <div class="table-responsive">
-    <table>
+    <table class="table table-striped">
     <thead><tr><th>Player</th><th>Starts</th><th>Bench</th><th>Total</th></tr></thead>
     <tbody>
       {% for name, counts in stats.leaderboard %}
@@ -91,7 +91,7 @@
 
   <h2>Shirt Number Distribution</h2>
   <div class="table-responsive">
-    <table>
+    <table class="table table-sm" style="max-width: 400px;">
     <thead><tr><th>Shirt #</th><th>Count</th><th>%</th></tr></thead>
     <tbody>
       {% for item in stats.shirt_dist %}
@@ -107,7 +107,7 @@
 
   <h2>Matches</h2>
   <div class="table-responsive">
-    <table>
+    <table class="table table-striped">
     <thead><tr><th>Date</th><th>Opposition</th><th>Location</th><th>Result</th><th>GF</th><th>GA</th></tr></thead>
     <tbody>
       {% for m in stats.match_list %}

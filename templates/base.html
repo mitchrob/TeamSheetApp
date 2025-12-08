@@ -1,142 +1,76 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}TeamsheetApp{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <style>
-      @import url("https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css");
-      /* Layout basics */
-      body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 0; }
-      .header { background: #2c3e50; color: #fff; padding: 10px 16px; display:flex; align-items:center; justify-content:space-between; }
-      .brand { font-weight: bold; margin-right: 24px; }
-      .nav { display:flex; gap: 12px; align-items:center; flex-wrap:wrap; }
-      .menu-button { display:none; background:transparent; color:inherit; border:0; font-size:20px; padding:6px 10px; }
-      .nav a { color: #ecf0f1; text-decoration: none; padding: 6px 10px; border-radius:4px; }
-      .nav a:hover { background: rgba(236,240,241,0.08); }
-      .container { padding: 16px; max-width:1200px; margin:0 auto; }
-
-      /* Flash messages */
-      .flashes { margin-bottom: 12px; }
-      .flashes ul { list-style:none; padding:0; margin:0; }
-      .flashes li { padding:6px 8px; border-radius:4px; margin-bottom:6px; }
-      .flashes li strong { margin-right:6px; }
-      .flashes li.error { background:#fdecea; color:#611a15; }
-      .flashes li.success { background:#e9f7ef; color:#14532d; }
-      .flashes li.info { background:#e8f2ff; color:#0b3b66; }
-
-      /* Tables: full-width by default, and scroll on small screens */
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-      thead { background: #f0f0f0; }
-      .table-responsive { width:100%; overflow-x:auto; -webkit-overflow-scrolling: touch; }
-
-      /* Forms and inputs */
-      label { display:block; margin-bottom:6px; }
-      input[type=text], input[type=password], input[type=number], input, select, textarea { width:100%; box-sizing: border-box; padding:6px; }
-
-      /* Buttons */
-      .btn { display:inline-block; padding:8px 12px; border-radius:6px; background:#2c3e50; color:#fff; border:0; cursor:pointer; }
-      .btn.secondary { background:#6c757d; }
-      .form-actions { margin-top:12px; }
-
-      /* Players grid (used on add page) */
-      .players { display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; }
-
-      /* Clickable table rows (used on player page) */
-      tr.clickable-row:hover {
-        background-color: #f2f2f2;
-        cursor: pointer;
-      }
-      /* Small screens adjustments */
-      @media (max-width: 800px) {
-        .header { padding: 10px; }
-        .brand { font-size: 16px; margin-right: 12px; }
-        .nav { gap: 8px; }
-        .container { padding: 10px; }
-        .players { grid-template-columns: 1fr; }
-        /* Make tables scroll horizontally rather than squashing */
-        table { display: table; }
-        th, td { white-space: nowrap; }
-        /* mobile: hide nav and show menu button */
-        .nav { display:none; flex-direction:column; background:#2c3e50; padding:10px; position:absolute; right:10px; top:56px; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.12); }
-        .nav.open { display:flex; }
-        .menu-button { display:inline-block; }
-        .btn { width:100%; padding:12px; font-size:16px; }
-      }
+      /* Custom styles */
+      body { padding-top: 56px; } /* Adjust body padding to account for fixed navbar */
+      .clickable-row:hover { background-color: #f8f9fa; cursor: pointer; }
+      .form-actions { margin-top: 1rem; }
+      .players { display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
     </style>
   </head>
   <body>
-    <div class="header">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <div class="brand">Guildford Rugby — Teamsheets</div>
-        <button class="menu-button" id="menuToggle" aria-expanded="false" aria-controls="mainNav">☰</button>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">Guildford Rugby</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            {% if session.get('admin') %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('add') }}">Add Teamsheet</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('view_duplicates') }}">Duplicates</a></li>
+            {% endif %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('stats') }}">Appearances</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('season_view') }}">Season Stats</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('data_view') }}">Data</a></li>
+          </ul>
+          <ul class="navbar-nav">
+            {% if session.get('admin') %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+            {% else %}
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Admin Login</a></li>
+            {% endif %}
+          </ul>
+        </div>
       </div>
-      <div class="nav" id="mainNav">
-        {% if session.get('admin') %}
-          <a href="{{ url_for('add') }}">Add Teamsheet</a>
-          <a href="{{ url_for('view_duplicates') }}">Duplicates</a>
-        {% endif %}
-        <a href="{{ url_for('stats') }}">Appearances</a>
-        <a href="{{ url_for('season_view') }}">Season Statistics</a>
-        <a href="{{ url_for('data_view') }}">Data</a>
-        {% if session.get('admin') %}
-          <a href="{{ url_for('logout') }}">Logout</a>
-        {% else %}
-          <a href="{{ url_for('login') }}">Admin login</a>
-        {% endif %}
-      </div>
-    </div>
-    <div class="container">
+    </nav>
+
+    <main class="container mt-4">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-          <div class="flashes">
-            <ul>
-            {% for category, msg in messages %}
-              <li class="{{ category|e }}"><strong>{{ category }}:</strong> {{ msg }}</li>
-            {% endfor %}
-            </ul>
-          </div>
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else ('success' if category == 'success' else 'info') }} alert-dismissible fade show" role="alert">
+              {{ msg }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
         {% endif %}
       {% endwith %}
       {% block content %}{% endblock %}
-    </div>
-      <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
-      <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-      <script>
-        $(document).ready(function() {
-          $('.datatable').DataTable();
-        });
-      </script>
-      <script>
-        (function(){
-          var btn = document.getElementById('menuToggle');
-          var nav = document.getElementById('mainNav');
-          if(!btn || !nav) return;
-          btn.addEventListener('click', function(){
-            var open = nav.classList.toggle('open');
-            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-          });
-          // Close nav when clicking outside on small screens
-          document.addEventListener('click', function(e){
-            if(window.matchMedia('(max-width:800px)').matches){
-              if(!nav.contains(e.target) && !btn.contains(e.target)){
-                nav.classList.remove('open');
-                btn.setAttribute('aria-expanded', 'false');
-              }
-            }
-          });
-        })();
+    </main>
 
-        // Make table rows with data-href attribute clickable
-        document.addEventListener('DOMContentLoaded', function() {
-          const rows = document.querySelectorAll('tr[data-href]');
-          rows.forEach(row => {
-            row.addEventListener('click', () => {
-              window.location.href = row.dataset.href;
-            });
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+      // Make table rows with data-href attribute clickable
+      document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('tr[data-href]');
+        rows.forEach(row => {
+          row.addEventListener('click', () => {
+            window.location.href = row.dataset.href;
           });
         });
-      </script>
+      });
+    </script>
   </body>
 </html>

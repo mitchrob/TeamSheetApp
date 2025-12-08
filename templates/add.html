@@ -4,23 +4,52 @@
   <h1>Add Teamsheet</h1>
   {# flashes shown in base.html #}
 
-  <form method="post" action="{{ url_for('add_post') }}">
-    <div>
-      <label>League: <input name="league" value="{{ defaults.league }}" /></label>
-      <label>Season: <input name="season" value="{{ defaults.season }}" /></label>
-      <label>Date: <input name="date" value="{{ defaults.date }}" /></label>
-      <label>Opposition: <input name="opposition" value="{{ defaults.opposition }}" /></label>
-      <label>Location: <input name="location" value="{{ defaults.location }}" /></label>
-      <label>Result: <input name="result" value="{{ defaults.result }}" /></label>
-      <label>Guildford Points: <input name="guildford_points" value="{{ defaults.guildford_points }}" /></label>
-      <label>Opposition Points: <input name="opposition_points" value="{{ defaults.opposition_points }}" /></label>
+  <form method="post" action="{{ url_for('add_post') }}" class="needs-validation" novalidate>
+    <h4>Match Details</h4>
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label for="league" class="form-label">League</label>
+        <input type="text" class="form-control" id="league" name="league" value="{{ defaults.league }}">
+      </div>
+      <div class="col-md-4">
+        <label for="season" class="form-label">Season</label>
+        <input type="text" class="form-control" id="season" name="season" value="{{ defaults.season }}">
+      </div>
+      <div class="col-md-4">
+        <label for="date" class="form-label">Date</label>
+        <input type="text" class="form-control" id="date" name="date" placeholder="dd/mm/yyyy" value="{{ defaults.date }}">
+      </div>
+      <div class="col-md-6">
+        <label for="opposition" class="form-label">Opposition</label>
+        <input type="text" class="form-control" id="opposition" name="opposition" value="{{ defaults.opposition }}">
+      </div>
+      <div class="col-md-6">
+        <label for="location" class="form-label">Location</label>
+        <input type="text" class="form-control" id="location" name="location" value="{{ defaults.location }}">
+      </div>
+      <div class="col-md-4">
+        <label for="result" class="form-label">Result</label>
+        <input type="text" class="form-control" id="result" name="result" value="{{ defaults.result }}">
+      </div>
+      <div class="col-md-4">
+        <label for="guildford_points" class="form-label">Guildford Points</label>
+        <input type="number" class="form-control" id="guildford_points" name="guildford_points" value="{{ defaults.guildford_points }}">
+      </div>
+      <div class="col-md-4">
+        <label for="opposition_points" class="form-label">Opposition Points</label>
+        <input type="number" class="form-control" id="opposition_points" name="opposition_points" value="{{ defaults.opposition_points }}">
+      </div>
     </div>
 
-    <h3>Players</h3>
+    <hr class="my-4">
+    <h4>Players</h4>
     <div class="players">
       <datalist id="playerNames"></datalist>
       {% for i in range(1,21) %}
-        <label>Player {{ i }}: <input name="player{{ i }}" list="playerNames" size="40" value="{{ defaults.players[i-1] }}" autocomplete="off"/></label>
+        <div class="mb-2">
+          <label for="player{{ i }}" class="form-label">Player {{ i }}</label>
+          <input type="text" class="form-control" id="player{{ i }}" name="player{{ i }}" list="playerNames" value="{{ defaults.players[i-1] }}" autocomplete="off">
+        </div>
       {% endfor %}
     </div>
     <script>
@@ -57,7 +86,7 @@
       })();
     </script>
     <div class="form-actions">
-      <button type="submit" class="btn">Add teamsheet</button>
+      <button type="submit" class="btn btn-primary btn-lg">Add Teamsheet</button>
     </div>
   </form>
 
