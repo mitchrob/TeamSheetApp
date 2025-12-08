@@ -217,6 +217,7 @@ def add_post():
 def stats():
     sort_by = request.args.get('sort', 'total')
     order = request.args.get('order', 'desc')
+    show_all = request.args.get('show') == 'all'
 
     starts_case = case((Appearance.position <= 15, 1), else_=0)
     bench_case = case((Appearance.position > 15, 1), else_=0)
@@ -248,8 +249,12 @@ def stats():
     else:
         query = query.order_by(sort_column.desc())
 
+    # Apply limit unless show=all is specified
+    if not show_all:
+        query = query.limit(100)
+
     player_stats = query.all()
-    return render_template('stats.html', players=player_stats, sort_by=sort_by, order=order)
+    return render_template('stats.html', players=player_stats, sort_by=sort_by, order=order, show_all=show_all)
 
 
 @app.route('/data', methods=['GET'])

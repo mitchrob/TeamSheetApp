@@ -3,6 +3,11 @@
 {% block content %}
   <h1>Player Appearances</h1>
   {% if players %}
+    {% if not show_all and players|length == 100 %}
+      <p>
+        Showing top 100 players. <a href="{{ url_for('stats', sort=sort_by, order=order, show='all') }}">View All Players</a>
+      </p>
+    {% endif %}
     <div class="table-responsive">
       <table class="datatable">
       <thead>
