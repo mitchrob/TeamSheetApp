@@ -14,7 +14,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-me-for-production')
 
 # --- Database Configuration ---
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'app.db')
+default_db_uri = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'app.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', default_db_uri)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -105,6 +106,51 @@ def find_potential_duplicates(player_names_to_check, all_player_names, threshold
     
     return errors
 
+def _process_teamsheet_form(form_data, match_obj=None):
+    """Helper to process and validate teamsheet form data for add and edit."""
+    player_names = [form_data.get(f'player{i}', '').strip() for i in range(1, 21)]
+
+    # Validate for duplicate players on the teamsheet
+    non_empty_players = [name for name in player_names if name]
+    player_counts = Counter(non_empty_players)
+    duplicates = [name for name, count in player_counts.items() if count > 1]
+    if duplicates:
+        flash(f'The teamsheet contains duplicate players: {", ".join(duplicates)}. Please correct and resubmit.', 'error')
+        return None
+
+    # Fuzzy match validation against existing players in the database
+    all_player_names_in_db = [p.name for p in Player.query.all()]
+    fuzzy_errors = find_potential_duplicates(non_empty_players, all_player_names_in_db)
+    if fuzzy_errors:
+        for error in fuzzy_errors:
+            flash(error, 'error')
+        return None
+
+    # If editing, clear existing appearances
+    if match_obj:
+        Appearance.query.filter_by(match_id=match_obj.id).delete()
+
+    # Create or update players and their appearances
+    for i, name in enumerate(player_names):
+        if not name:
+            continue
+        
+        player = Player.query.filter_by(name=name).first()
+        if not player:
+            # This player is new to the database
+            player = Player(name=name)
+            db.session.add(player)
+        
+        # The appearance is always new, either for a new match or after clearing old ones
+        appearance = Appearance(
+            player=player, 
+            match=match_obj, 
+            position=i + 1
+        )
+        db.session.add(appearance)
+    
+    return True # Indicates success
+
 
 @app.route('/', methods=['GET'])
 def index():
@@ -131,14 +177,7 @@ def player_names():
 @admin_required
 def add_post():
     league = request.form.get('league', '').strip()
-    season = request.form.get('season', '').strip()
     date_str = request.form.get('date', '').strip()
-    opposition = request.form.get('opposition', '').strip()
-    location = request.form.get('location', '').strip()
-    result = request.form.get('result', '').strip()
-    guildford_points = request.form.get('guildford_points', '').strip()
-    opposition_points = request.form.get('opposition_points', '').strip()
-    player_names = [request.form.get(f'player{i}', '').strip() for i in range(1, 21)]
 
     match_date = parse_date_safe(date_str)
     if not match_date:
@@ -146,43 +185,24 @@ def add_post():
         return redirect(url_for('add'))
 
     # Validate for duplicate players
-    non_empty_players = [name for name in player_names if name]
-    player_counts = Counter(non_empty_players)
-    duplicates = [name for name, count in player_counts.items() if count > 1]
-    if duplicates:
-        flash(f'The teamsheet contains duplicate players: {", ".join(duplicates)}. Please correct and resubmit.', 'error')
-        return redirect(url_for('add'))
-
-    # Fuzzy match validation against existing players
-    all_player_names_in_db = [p.name for p in Player.query.all()]
-    fuzzy_errors = find_potential_duplicates(non_empty_players, all_player_names_in_db)
-    if fuzzy_errors:
-        for error in fuzzy_errors:
-            flash(error, 'error')
-        return redirect(url_for('add'))
     try:
+        guildford_points = request.form.get('guildford_points', '').strip()
+        opposition_points = request.form.get('opposition_points', '').strip()
+
         new_match = Match(
             league=league,
-            season=season,
+            season=request.form.get('season', '').strip(),
             date=match_date,
-            opposition=opposition,
-            location=location,
-            result=result,
+            opposition=request.form.get('opposition', '').strip(),
+            location=request.form.get('location', '').strip(),
+            result=request.form.get('result', '').strip(),
             guildford_points=int(guildford_points) if guildford_points.isdigit() else None,
             opposition_points=int(opposition_points) if opposition_points.isdigit() else None
         )
         db.session.add(new_match)
 
-        for i, name in enumerate(player_names):
-            if not name:
-                continue
-            player = Player.query.filter_by(name=name).first()
-            if not player:
-                player = Player(name=name)
-                db.session.add(player)
-            
-            appearance = Appearance(player=player, match=new_match, position=i + 1)
-            db.session.add(appearance)
+        if not _process_teamsheet_form(request.form, new_match):
+            return redirect(url_for('add'))
 
         db.session.commit()
         flash('Teamsheet added successfully.', 'success')
@@ -254,38 +274,17 @@ def edit_match(match_id):
         match.opposition_points = int(request.form.get('opposition_points')) if request.form.get('opposition_points').isdigit() else None
 
         # Clear existing appearances for this match
-        Appearance.query.filter_by(match_id=match.id).delete()
-
-        player_names = [request.form.get(f'player{i}', '').strip() for i in range(1, 21)]
-        # Validate for duplicate players
-        non_empty_players = [name for name in player_names if name]
-        player_counts = Counter(non_empty_players)
-        duplicates = [name for name, count in player_counts.items() if count > 1]
-        if duplicates:
-            flash(f'The teamsheet contains duplicate players: {", ".join(duplicates)}. Please correct and resubmit.', 'error')
+        if not _process_teamsheet_form(request.form, match):
             return redirect(url_for('edit_match', match_id=match_id))
 
-        # Fuzzy match validation against existing players
-        all_player_names_in_db = [p.name for p in Player.query.all()]
-        fuzzy_errors = find_potential_duplicates(non_empty_players, all_player_names_in_db)
-        if fuzzy_errors:
-            for error in fuzzy_errors:
-                flash(error, 'error')
+        try:
+            db.session.commit()
+            flash('Match updated successfully.', 'success')
+            return redirect(url_for('data_view'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating match: {e}', 'error')
             return redirect(url_for('edit_match', match_id=match_id))
-
-        for i, name in enumerate(player_names):
-            if not name:
-                continue
-            player = Player.query.filter_by(name=name).first()
-            if not player:
-                player = Player(name=name)
-                db.session.add(player)
-            appearance = Appearance(player=player, match=match, position=i + 1)
-            db.session.add(appearance)
-        
-        db.session.commit()
-        flash('Match updated successfully.', 'success')
-        return redirect(url_for('data_view'))
 
     # GET request
     players = [''] * 20
@@ -358,8 +357,22 @@ def view_duplicates():
             processed_names.update(current_group)
             
     # For each group, get the detailed stats for each player
-    detailed_groups = [[get_player_stats(name) for name in group] for group in duplicate_groups_of_names]
-            
+    detailed_groups = []
+    all_names_in_groups = {name for group in duplicate_groups_of_names for name in group}
+
+    if all_names_in_groups:
+        # Fetch all stats in one go to avoid N+1 queries
+        player_stats_map = {}
+        stats_query = db.session.query(Player.name, func.count(Appearance.id)).join(Appearance).filter(Player.name.in_(all_names_in_groups)).group_by(Player.name).all()
+        for name, count in stats_query:
+            player_stats_map[name] = {'name': name, 'total': count}
+
+        for group in duplicate_groups_of_names:
+            detailed_group = []
+            for name in group:
+                # Use the pre-fetched stats, or default if player has no appearances
+                detailed_group.append(player_stats_map.get(name, {'name': name, 'total': 0}))
+            detailed_groups.append(detailed_group)
     return render_template('duplicates.html', detailed_groups=detailed_groups)
 
 def _collect_seasons(rows):
