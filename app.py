@@ -380,6 +380,62 @@ def view_duplicates():
             detailed_groups.append(detailed_group)
     return render_template('duplicates.html', detailed_groups=detailed_groups)
 
+@app.route('/merge', methods=['GET'])
+@admin_required
+def merge_form():
+    """
+    Displays a form to merge a specific group of duplicate players.
+    The group is identified by a list of names passed as a query parameter.
+    """
+    player_names_str = request.args.get('players', '')
+    if not player_names_str:
+        flash('No players specified for merging.', 'error')
+        return redirect(url_for('view_duplicates'))
+
+    player_names = [name.strip() for name in player_names_str.split(',') if name.strip()]
+    
+    # Fetch details for the players in the group
+    players_in_group = Player.query.filter(Player.name.in_(player_names)).all()
+
+    if len(players_in_group) < 2:
+        flash('A merge operation requires at least two players.', 'info')
+        return redirect(url_for('view_duplicates'))
+
+    return render_template('merge_form.html', players=players_in_group)
+
+
+@app.route('/merge', methods=['POST'])
+@admin_required
+def merge_players():
+    """
+    Handles the merging of player records.
+    """
+    names_to_merge = request.form.getlist('names_to_merge')
+    canonical_name = request.form.get('canonical_name')
+
+    if not canonical_name or not names_to_merge or len(names_to_merge) < 1:
+        flash('You must select a correct name and at least one player to merge.', 'error')
+        return redirect(request.referrer or url_for('view_duplicates'))
+
+    if canonical_name not in names_to_merge:
+        flash('The selected correct name must be one of the players being merged.', 'error')
+        return redirect(request.referrer)
+
+    # The canonical player is the one we keep
+    canonical_player = Player.query.filter_by(name=canonical_name).first()
+    
+    # The players to be merged are all selected players except the canonical one
+    players_to_remove = Player.query.filter(Player.name.in_(names_to_merge), Player.name != canonical_name).all()
+
+    for player in players_to_remove:
+        # Re-assign all appearances to the canonical player
+        Appearance.query.filter_by(player_id=player.id).update({'player_id': canonical_player.id})
+        db.session.delete(player)
+
+    db.session.commit()
+    flash(f'Successfully merged {len(players_to_remove)} player(s) into "{canonical_name}".', 'success')
+    return redirect(url_for('view_duplicates'))
+
 def _collect_seasons(rows):
     # Query distinct seasons from the Match table
     seasons_query = db.session.query(Match.season).distinct().all()

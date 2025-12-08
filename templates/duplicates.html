@@ -1,42 +1,11 @@
 {% extends 'base.html' %}
 {% block title %}Potential Duplicates{% endblock %}
 {% block content %}
-  <style>
-    .duplicate-group {
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin-bottom: 24px;
-      padding: 16px;
-    }
-    .duplicate-group h2 {
-      margin-top: 0;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 8px;
-    }
-    .player-columns {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
-    }
-    .player-card {
-      border: 1px solid #e0e0e0;
-      padding: 12px;
-      border-radius: 6px;
-    }
-    .player-card h3 {
-      margin-top: 0;
-    }
-    .player-card ul {
-      padding-left: 20px;
-      margin: 0;
-    }
-  </style>
 
   <h1>Potential Duplicate Players</h1>
   <p>
     The following groups of players have very similar names and may be duplicates.
-    Review each group and consider merging them by using the "Edit" functionality on the 
-    <a href="{{ url_for('data_view') }}">Data page</a> to standardize the names.
+    Review each group and use the "Review & Merge" button to consolidate them into a single correct record.
   </p>
 
   {% if detailed_groups %}
@@ -44,22 +13,17 @@
       <div class="duplicate-group">
         <h2>Group: {{ group|map(attribute='name')|join(', ') }}</h2>
         <div class="player-columns">
-          {% for player_stats in group %}
-            <div class="player-card">
-              <h3>{{ player_stats.name }}</h3>
-              <p>
-                <strong>Total:</strong> {{ player_stats.total }} | 
-                <strong>Starts:</strong> {{ player_stats.starts }} | 
-                <strong>Bench:</strong> {{ player_stats.bench }}
-              </p>
-              <strong>Appearances:</strong>
-              <ul>
-                {% for appearance in player_stats.appearances %}
-                  <li>{{ appearance.match.date.strftime('%d/%m/%Y') }} vs {{ appearance.match.opposition }} - <a href="{{ url_for('edit_match', match_id=appearance.match.id) }}">Edit Match</a></li>
-                {% endfor %}
-              </ul>
-            </div>
-          {% endfor %}
+          <ul class="list-group">
+            {% for player_stats in group %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('player_view', name=player_stats.name) }}">{{ player_stats.name }}</a>
+                <span class="badge bg-primary rounded-pill">{{ player_stats.total }} appearances</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="mt-3">
+          <a href="{{ url_for('merge_form', players=group|map(attribute='name')|join(',')) }}" class="btn btn-primary">Review & Merge</a>
         </div>
       </div>
     {% endfor %}
