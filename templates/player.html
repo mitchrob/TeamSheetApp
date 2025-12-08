@@ -60,7 +60,7 @@
     </thead>
     <tbody>
       {% for a in stats.appearances %}
-        <a href="{{ url_for('edit_match', match_id=a.match.id) }}" class="data-row-link">
+        <tr class="clickable-row" data-href="{{ url_for('edit_match', match_id=a.match.id) }}">
           <td>{{ a.match.date.strftime('%d/%m/%Y') }}</td>
           <td>{{ a.match.season }}</td>
           <td>{{ a.match.opposition }}</td>
@@ -73,7 +73,7 @@
               (Bench)
             {% endif %}
           </td>
-        </a>
+        </tr>
       {% endfor %}
     </tbody>
     </table>

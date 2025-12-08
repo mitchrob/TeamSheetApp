@@ -43,13 +43,8 @@
       /* Players grid (used on add page) */
       .players { display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; }
 
-      /* Clickable table rows */
-      a.data-row-link {
-        display: table-row;
-        text-decoration: none;
-        color: inherit;
-      }
-      a.data-row-link:hover {
+      /* Clickable table rows (used on player page) */
+      tr.clickable-row:hover {
         background-color: #f2f2f2;
         cursor: pointer;
       }
@@ -132,6 +127,16 @@
             }
           });
         })();
+
+        // Make table rows with data-href attribute clickable
+        document.addEventListener('DOMContentLoaded', function() {
+          const rows = document.querySelectorAll('tr[data-href]');
+          rows.forEach(row => {
+            row.addEventListener('click', () => {
+              window.location.href = row.dataset.href;
+            });
+          });
+        });
       </script>
   </body>
 </html>
