@@ -217,6 +217,7 @@ def add_post():
 def stats():
     sort_by = request.args.get('sort', 'total')
     order = request.args.get('order', 'desc')
+    search_query = request.args.get('search', '')
     show_all = request.args.get('show') == 'all'
 
     starts_case = case((Appearance.position <= 15, 1), else_=0)
@@ -233,6 +234,10 @@ def stats():
         starts_col,
         bench_col
     ).join(Appearance).group_by(Player.name)
+
+    # Apply search filter if a query is provided
+    if search_query:
+        query = query.filter(Player.name.ilike(f'%{search_query}%'))
 
     # Map string parameter to a valid SQLAlchemy sortable column
     sort_map = {
@@ -254,7 +259,7 @@ def stats():
         query = query.limit(100)
 
     player_stats = query.all()
-    return render_template('stats.html', players=player_stats, sort_by=sort_by, order=order, show_all=show_all)
+    return render_template('stats.html', players=player_stats, sort_by=sort_by, order=order, show_all=show_all, search_query=search_query)
 
 
 @app.route('/data', methods=['GET'])
