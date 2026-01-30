@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Edit Teamsheet{% endblock %}
+{% block content %}
+
+<h2>Edit Teamsheet</h2>
+<p>Modify the details for the match below and click "Update Teamsheet" to save the changes.</p>
+
+<form action="{{ url_for('admin.edit_match', match_id=match.id) }}" method="post" id="teamsheet-form"
+    class="needs-validation" novalidate>
+    <h4>Match Details</h4>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="league" class="form-label">League</label>
+            <input type="text" class="form-control" id="league" name="league" value="{{ match.league or '' }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="season" class="form-label">Season</label>
+            <input type="text" class="form-control" id="season" name="season" value="{{ match.season or '' }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="date" class="form-label">Date</label>
+            <input type="text" class="form-control" id="date" name="date" placeholder="dd/mm/yyyy"
+                value="{{ match.date.strftime('%d/%m/%Y') if match.date else '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="opposition" class="form-label">Opposition</label>
+            <input type="text" class="form-control" id="opposition" name="opposition"
+                value="{{ match.opposition or '' }}">
+        </div>
+        <div class="col-md-6 mb-3">
+            <label for="location" class="form-label">Location</label>
+            <input type="text" class="form-control" id="location" name="location" value="{{ match.location or '' }}">
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label for="result" class="form-label">Result</label>
+            <input type="text" class="form-control" id="result" name="result" value="{{ match.result or '' }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="guildford_points" class="form-label">Guildford Points</label>
+            <input type="number" class="form-control" id="guildford_points" name="guildford_points"
+                value="{{ match.guildford_points if match.guildford_points is not none else '' }}">
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="opposition_points" class="form-label">Opposition Points</label>
+            <input type="number" class="form-control" id="opposition_points" name="opposition_points"
+                value="{{ match.opposition_points if match.opposition_points is not none else '' }}">
+        </div>
+    </div>
+
+    <hr>
+    <h4>Players</h4>
+    <div class="players">
+        <datalist id="playerNames"></datalist>
+        {% for i in range(1, 21) %}
+        <div class="mb-2">
+            <label for="player{{ i }}" class="form-label">Player {{ i }}</label>
+            <input type="text" class="form-control" id="player{{ i }}" name="player{{ i }}" list="playerNames"
+                value="{{ players[i-1] }}" autocomplete="off">
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg">Update Teamsheet</button>
+        <a href="{{ url_for('main.data_view') }}" class="btn btn-secondary btn-lg">Cancel</a>
+    </div>
+</form>
+{% endblock %}

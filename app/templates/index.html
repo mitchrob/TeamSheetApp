@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+  <div class="col-md-12 text-center">
+    <h1 class="display-4">Guildford Rugby Teamsheets</h1>
+    <p class="lead">Track player appearances, match results, and season statistics.</p>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-header">
+        Recent Matches
+      </div>
+      <div class="list-group list-group-flush">
+        {% if recent_matches %}
+        {% for match in recent_matches %}
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <span class="fw-bold">{{ match.date.strftime('%d/%m/%Y') }}</span>
+            <span class="badg bg-secondary mx-2">{{ match.result }}</span>
+            vs {{ match.opposition }} ({{ match.location }})
+          </div>
+          {% if session.get('admin') %}
+          <a href="{{ url_for('admin.edit_match', match_id=match.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="list-group-item">No matches recorded yet.</div>
+        {% endif %}
+      </div>
+      <div class="card-footer text-center">
+        <a href="{{ url_for('main.data_view') }}" class="btn btn-sm btn-primary">View All Matches</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-4">
+      <div class="card-header">
+        Quick Stats
+      </div>
+      <div class="card-body">
+        <p class="card-text"><strong>Total Players:</strong> {{ total_players }}</p>
+        <p class="card-text"><strong>Total Matches:</strong> {{ total_matches }}</p>
+        <hr>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('main.stats') }}" class="btn btn-outline-dark">Player Stats</a>
+          <a href="{{ url_for('main.season_view') }}" class="btn btn-outline-dark">Season Overview</a>
+          {% if session.get('admin') %}
+          <a href="{{ url_for('admin.add') }}" class="btn btn-success">Add New Match</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

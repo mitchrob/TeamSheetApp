@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Player - {{ stats.name }}{% endblock %}
+{% block content %}
+<h1>{{ stats.name }}</h1>
+<p>
+  <strong>1st appearance:</strong>
+  {% if stats.first_date %}{{ stats.first_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
+  &nbsp;|&nbsp;
+  <strong>Most recent:</strong>
+  {% if stats.last_date %}{{ stats.last_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
+</p>
+<p>
+  <strong>Starts:</strong> {{ stats.starts }} &nbsp;|&nbsp;
+  <strong>Bench:</strong> {{ stats.bench }} &nbsp;|&nbsp;
+  <strong>Total:</strong> {{ stats.total }} &nbsp;|&nbsp;
+  <strong>Win %:</strong> {{ '%.1f' % stats.win_pct }}%
+</p>
+
+<h2>Shirt number distribution</h2>
+{% if stats.by_shirt %}
+<div class="table-responsive">
+  <table class="table table-sm" style="max-width: 400px;">
+    <thead>
+      <tr>
+        <th>Shirt</th>
+        <th>Appearances</th>
+        <th>% of total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in stats.by_shirt %}
+      <tr>
+        <td>
+          {% if s.num > 15 %}
+          {{ s.num }} (bench)
+          {% else %}
+          {{ s.num }}
+          {% endif %}
+        </td>
+        <td>{{ s.count }}</td>
+        <td>{{ '%.1f' % s.pct }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>No shirt-number data available.</p>
+{% endif %}
+
+<h2>All teamsheets containing {{ stats.name }}</h2>
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Season</th>
+        <th>Opposition</th>
+        <th>Location</th>
+        <th>Result</th>
+        <th>Score</th>
+        <th>Position</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in stats.appearances %}
+      <tr class="clickable-row" data-href="{{ url_for('admin.edit_match', match_id=a.match.id) }}">
+        <td>{{ a.match.date.strftime('%d/%m/%Y') }}</td>
+        <td>{{ a.match.season }}</td>
+        <td>{{ a.match.opposition }}</td>
+        <td>{{ a.match.location }}</td>
+        <td>{{ a.match.result }}</td>
+        <td>{{ a.match.guildford_points if a.match.guildford_points is not none else 'N/A' }} - {{
+          a.match.opposition_points if a.match.opposition_points is not none else 'N/A' }}</td>
+        <td>
+          {{ a.position }}
+          {% if a.position > 15 %}
+          (Bench)
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p><a href="{{ url_for('main.stats') }}">Back to stats</a> • <a href="{{ url_for('main.data_view') }}">View data</a></p>
+{% endblock %}

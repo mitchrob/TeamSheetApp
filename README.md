@@ -31,36 +31,43 @@ Notes:
 
 ## Deployment to PythonAnywhere
 
-These are concise steps to deploy this app on PythonAnywhere.
+1.  **Pull changes**: On PythonAnywhere, navigate to your project and pull the latest changes:
+    ```bash
+    cd TeamsheetApp
+    git pull
+    ```
 
-1. Create a new web app on PythonAnywhere (choose 'Flask' and the correct Python version).
-2. Upload your project files (all repository files) to your PythonAnywhere home directory (use the Files tab or git).
-3. Create and activate a virtualenv on PythonAnywhere (match your Python version):
+2.  **Update Dependencies**:
+    ```bash
+    source myenv/bin/activate
+    pip install -r requirements.txt
+    ```
 
-```bash
-python3.8 -m venv ~/myenv
-source ~/myenv/bin/activate
-pip install -r /home/yourusername/TeamsheetApp/requirements.txt
-```
+3.  **Update WSGI Configuration**:
+    Edit your WSGI configuration file (in the Web tab) to point to the new application factory.
 
-4. In the PythonAnywhere Web tab, edit the WSGI configuration file to import your `app` object. Example WSGI snippet (replace `yourusername` and the path as needed):
+    **Old:**
+    ```python
+    from app import app as application
+    ```
 
-```python
-import sys
-project_home = '/home/yourusername/TeamsheetApp'
-if project_home not in sys.path:
-	sys.path.insert(0, project_home)
+    **New:**
+    ```python
+    import sys
+    import os
 
-from app import app as application
-```
+    # Add project directory to path
+    path = '/home/yourusername/TeamsheetApp'
+    if path not in sys.path:
+        sys.path.insert(0, path)
 
-5. Configure static files (optional). In the Web tab, add a Static files mapping for `/static/` to your project's `static/` directory if you have static assets.
+    # Import the application factory
+    from app import create_app
+    application = create_app()
+    ```
 
-6. Set environment variables in the Web tab: `SECRET_KEY`, `ADMIN_USER`, and `ADMIN_PASS` (avoid using the defaults in production).
-
-7. Reload the web app from the Web tab. Your app should be live at `yourusername.pythonanywhere.com`.
+4.  **Reload**: Reload the web app from the Web tab.
 
 Notes:
-- PythonAnywhere uses WSGI; you do not call `app.run()` in production — the WSGI file imports the `app` object.
-- Ensure `GRFC_data.csv` is writable by the web app process (check file permissions in Files tab).
-- If you prefer, keep `requirements.txt` updated with pinned versions to ensure reproducible installs.
+- The database `app.db` is in the project root. If you want to keep your existing data, make sure `app.db` is preserved (it is git-ignored by default).
+- If you have trouble, check the Error Log in the Web tab.

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Teamsheet Data{% endblock %}
+{% block content %}
+
+<h2>All Match Data</h2>
+<p>This table shows all match data stored in the database. You can edit or delete records from here.</p>
+
+{% if matches %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover datatable" style="width:100%">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Season</th>
+                <th>Opposition</th>
+                <th>Result</th>
+                <th>Score</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in matches %}
+            <tr>
+                <td>
+                    <span style="display:none;">{{ match.date.strftime('%Y%m%d') }}</span>
+                    {{ match.date.strftime('%d/%m/%Y') }}
+                </td>
+                <td>{{ match.season }}</td>
+                <td>{{ match.opposition }}</td>
+                <td>{{ match.result }}</td>
+                <td>{{ match.guildford_points if match.guildford_points is not none else 'N/A' }} - {{
+                    match.opposition_points if match.opposition_points is not none else 'N/A' }}</td>
+                <td>
+                    <a href="{{ url_for('admin.edit_match', match_id=match.id) }}"
+                        class="btn btn-sm btn-primary">Edit</a>
+                    <form action="{{ url_for('admin.delete_match', match_id=match.id) }}" method="post"
+                        style="display: inline;"
+                        onsubmit="return confirm('Are you sure you want to delete this match? This action cannot be undone.');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>No match data found in the database.</p>
+{% endif %}
+
+<script>
+    $(document).ready(function () {
+        $('.datatable').DataTable({
+            "order": [[0, "desc"]], // Default sort by the first column (date), descending
+            "pageLength": 25
+        });
+    });
+</script>
+{% endblock %}
