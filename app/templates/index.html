@@ -10,9 +10,9 @@
 
 <div class="row">
   <div class="col-md-8">
-    <div class="card mb-4">
+    <div class="card mb-4 h-100">
       <div class="card-header">
-        Recent Matches
+        <i class="bi bi-clock-history me-2"></i>Recent Matches
       </div>
       <div class="list-group list-group-flush">
         {% if recent_matches %}
@@ -20,8 +20,10 @@
         <div class="list-group-item d-flex justify-content-between align-items-center">
           <div>
             <span class="fw-bold">{{ match.date.strftime('%d/%m/%Y') }}</span>
-            <span class="badg bg-secondary mx-2">{{ match.result }}</span>
-            vs {{ match.opposition }} ({{ match.location }})
+            <span
+              class="badge {{ 'bg-success' if 'win' in match.result|lower else 'bg-danger' if 'loss' in match.result|lower else 'bg-warning text-dark' }} mx-2">{{
+              match.result }}</span>
+            vs {{ match.opposition }} <small class="text-muted">({{ match.location }})</small>
           </div>
           {% if session.get('admin') %}
           <a href="{{ url_for('admin.edit_match', match_id=match.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
@@ -39,9 +41,9 @@
   </div>
 
   <div class="col-md-4">
-    <div class="card mb-4">
+    <div class="card mb-4 h-100">
       <div class="card-header">
-        Quick Stats
+        <i class="bi bi-bar-chart-line me-2"></i>Quick Stats
       </div>
       <div class="card-body">
         <p class="card-text"><strong>Total Players:</strong> {{ total_players }}</p>
