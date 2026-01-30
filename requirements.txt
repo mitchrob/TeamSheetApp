@@ -2,3 +2,5 @@ Flask
 Flask-SQLAlchemy
 thefuzz
 python-Levenshtein
+requests
+beautifulsoup4

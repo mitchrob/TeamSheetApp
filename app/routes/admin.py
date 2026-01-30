@@ -3,6 +3,9 @@ from app.extensions import db
 from app.models import Match, Player, Appearance
 from app.utils import admin_required, parse_date_safe
 from app.services import find_potential_duplicates, _collect_seasons
+from app.services import find_potential_duplicates, _collect_seasons
+from app.services.rfu_scraper import RFUScraper
+from sqlalchemy import func
 from collections import Counter
 
 bp = Blueprint('admin', __name__)
@@ -248,3 +251,96 @@ def merge_players():
     db.session.commit()
     flash(f'Successfully merged {len(players_to_remove)} player(s) into "{canonical_name}".', 'success')
     return redirect(url_for('admin.view_duplicates'))
+
+@bp.route('/sync', methods=['POST'])
+@admin_required
+def sync_matches():
+    # URL for Guildford RFC (Team 9045)
+    RFU_URL = "https://www.englandrugby.com/fixtures-and-results/search-results?team=9045&season=2025-2026"
+    
+    scraper = RFUScraper(RFU_URL)
+    scraped_matches = scraper.fetch_data()
+    
+    added_count = 0
+    updated_count = 0
+    
+    for m_data in scraped_matches:
+        # Check if match exists by Date and Opposition
+        # We might need to be fuzzy with opposition names if they don't match exactly 
+        # but for now we'll assume strict matching or we can improve later.
+        
+        existing = Match.query.filter(
+            Match.date == m_data['date'].date()
+            # Match.opposition == m_data['opposition'] # Start with date only for looser matching? 
+            # Opposition names might vary ("Guildford" vs "Guildford RFC"). 
+            # But the scraper extracts "Tottonians", DB might have "Tottonians RFC".
+            # Let's rely on date for now and check if we have a match on that date.
+        ).first()
+
+        match_date = m_data['date'].date()
+        
+        if existing:
+            # Update score if it's missing in DB but found in scraper
+            if existing.result in [None, '', 'Pending'] and m_data['result'] in ['Win', 'Loss', 'Draw']:
+                existing.result = m_data['result']
+                existing.location = m_data['location']
+                if m_data['score']:
+                    # Assuming score is "Home-Away", we need to split
+                    # But scraper returns "12-34".
+                    # We need to map to our points cols.
+                    # Scraper logic already determined result relative to us.
+                    # But we need raw points.
+                    # Parse score again or update scraper to return points.
+                    # Scraper returns "score": "31-20".
+                    # If location is Home: Guildford=31, Opp=20
+                    parts = m_data['score'].split('-')
+                    if len(parts) == 2:
+                        h_score = int(parts[0])
+                        a_score = int(parts[1])
+                        
+                        if m_data['location'] == 'Home':
+                            existing.guildford_points = h_score
+                            existing.opposition_points = a_score
+                        else:
+                            existing.guildford_points = a_score
+                            existing.opposition_points = h_score
+                
+                updated_count += 1
+        else:
+            # Create new match
+            # Need to parse score points
+            g_points = None
+            o_points = None
+            if m_data['score']:
+                parts = m_data['score'].split('-')
+                if len(parts) == 2:
+                    h_score = int(parts[0])
+                    a_score = int(parts[1])
+                    if m_data['location'] == 'Home':
+                        g_points = h_score
+                        o_points = a_score
+                    else:
+                        g_points = a_score
+                        o_points = h_score
+
+            new_match = Match(
+                league=m_data['competition'],
+                season="2025-2026", # Hardcoded or derived
+                date=match_date,
+                opposition=m_data['opposition'],
+                location=m_data['location'],
+                result=m_data['result'],
+                guildford_points=g_points,
+                opposition_points=o_points
+            )
+            db.session.add(new_match)
+            added_count += 1
+
+    try:
+        db.session.commit()
+        flash(f'Sync complete: {added_count} added, {updated_count} updated.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error syncing matches: {e}', 'error')
+
+    return redirect(url_for('main.data_view'))

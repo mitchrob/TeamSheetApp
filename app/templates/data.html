@@ -2,7 +2,14 @@
 {% block title %}Teamsheet Data{% endblock %}
 {% block content %}
 
-<h2>All Match Data</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>All Match Data</h2>
+    <form action="{{ url_for('admin.sync_matches') }}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-warning">
+            <i class="bi bi-arrow-repeat"></i> Sync Matches (RFU)
+        </button>
+    </form>
+</div>
 <p>This table shows all match data stored in the database. You can edit or delete records from here.</p>
 
 {% if matches %}
@@ -38,6 +45,10 @@
                         onsubmit="return confirm('Are you sure you want to delete this match? This action cannot be undone.');">
                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>
+                    {% if match.app_count == 0 %}
+                    <span class="badge bg-danger ms-2" title="No players assigned"><i
+                            class="bi bi-exclamation-circle"></i> No Teamsheet</span>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

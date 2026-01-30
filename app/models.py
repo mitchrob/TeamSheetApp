@@ -15,7 +15,7 @@ class Match(db.Model):
     result = db.Column(db.String(20))
     guildford_points = db.Column(db.Integer)
     opposition_points = db.Column(db.Integer)
-    appearances = db.relationship('Appearance', back_populates='match', cascade="all, delete-orphan")
+    appearances = db.relationship('Appearance', back_populates='match', cascade="all, delete-orphan", lazy='select')
 
 class Appearance(db.Model):
     id = db.Column(db.Integer, primary_key=True)

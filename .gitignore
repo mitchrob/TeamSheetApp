@@ -6,3 +6,5 @@ app.db
 
 # Python cache
 __pycache__/
+rfu_sample.html
+rfu_sample_files/
