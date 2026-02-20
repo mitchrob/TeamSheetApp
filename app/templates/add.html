@@ -4,52 +4,151 @@
 <h1>Add Teamsheet</h1>
 {# flashes shown in base.html #}
 
-<form method="post" action="{{ url_for('admin.add_post') }}">
-  <div>
-    <label>League: <input name="league" value="{{ defaults.league }}" /></label>
-    <label>Season: <input name="season" value="{{ defaults.season }}" /></label>
-    <label>Date: <input name="date" value="{{ defaults.date }}" /></label>
-    <label>Opposition: <input name="opposition" value="{{ defaults.opposition }}" /></label>
-    <label>Location: <input name="location" value="{{ defaults.location }}" /></label>
-    <label>Result: <input name="result" value="{{ defaults.result }}" /></label>
-    <label>Guildford Points: <input name="guildford_points" value="{{ defaults.guildford_points }}" /></label>
-    <label>Opposition Points: <input name="opposition_points" value="{{ defaults.opposition_points }}" /></label>
-  </div>
+<form method="post" action="{{ url_for('admin.add_post') }}" class="add-teamsheet-form">
 
-  <h3>Players</h3>
-  <div class="players">
-    <datalist id="playerNames"></datalist>
-    {% for i in range(1,21) %}
-    <label>Player {{ i }}: <input name="player{{ i }}" list="playerNames" size="40" value="{{ defaults.players[i-1] }}"
-        autocomplete="off" /></label>
-    {% endfor %}
-  </div>
+  <section class="form-section">
+    <h2>Match Details</h2>
+    <div class="form-grid">
+      <label>League: <input name="league" value="{{ defaults.league }}" /></label>
+      <label>Season: <input name="season" value="{{ defaults.season }}" /></label>
+      <label>Date: <input type="date" name="date" required
+          value="{{ defaults.date|replace('/', '-') if defaults.date and '-' in defaults.date else '' }}"
+          placeholder="dd/mm/yyyy" /></label>
+      <label>Opposition: <input name="opposition" value="{{ defaults.opposition }}" /></label>
+      <label>Location: <input name="location" value="{{ defaults.location }}" /></label>
+      <label>Result: <input name="result" value="{{ defaults.result }}" placeholder="Win/Loss/Draw" /></label>
+      <label>Guildford Points: <input type="number" name="guildford_points"
+          value="{{ defaults.guildford_points }}" /></label>
+      <label>Opposition Points: <input type="number" name="opposition_points"
+          value="{{ defaults.opposition_points }}" /></label>
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Starting XV</h2>
+    <div class="players-grid">
+      <datalist id="playerNames"></datalist>
+      {% for i in range(1, 16) %}
+      <div class="player-input-group">
+        <span class="position-label">{{ i }}.</span>
+        <div class="input-wrapper">
+          <input name="player{{ i }}" list="playerNames" value="{{ defaults.players[i-1] }}" autocomplete="off"
+            class="player-input" data-position="{{ i }}" placeholder="Player {{ i }}" />
+          <span class="milestone-badge" id="milestone-{{ i }}" style="display:none"></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="form-section">
+    <h2>Replacements</h2>
+    <div class="players-grid">
+      {% for i in range(16, 21) %}
+      <div class="player-input-group">
+        <span class="position-label">{{ i }}.</span>
+        <div class="input-wrapper">
+          <input name="player{{ i }}" list="playerNames" value="{{ defaults.players[i-1] }}" autocomplete="off"
+            class="player-input" data-position="{{ i }}" placeholder="Replacement" />
+          <span class="milestone-badge" id="milestone-{{ i }}" style="display:none"></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div id="duplicate-warning" class="alert alert-warning" style="display: none;"></div>
+
   <script>
     (function () {
-      // Fetch existing player names and populate the datalist for browser-native suggestions.
-      // This runs only on the add page. The endpoint is admin-protected.
+      let knownPlayers = {}; // name -> count
+
       function populate() {
         fetch(window.location.origin + '/player_names')
           .then(r => { if (!r.ok) throw new Error('Failed to fetch'); return r.json(); })
-          .then(names => {
+          .then(data => {
             const dl = document.getElementById('playerNames');
             if (!dl) return;
-            // Clear existing
             dl.innerHTML = '';
-            names.forEach(n => {
-              if (n && typeof n === 'string') {
-                const opt = document.createElement('option');
-                opt.value = n;
-                dl.appendChild(opt);
-              }
+
+            // data is list of {name, count}
+            data.forEach(item => {
+              knownPlayers[item.name] = item.count;
+              const opt = document.createElement('option');
+              opt.value = item.name;
+              dl.appendChild(opt);
             });
+
+            // Re-check all inputs after load (in case of browser autofill or defaults)
+            document.querySelectorAll('.player-input').forEach(checkPlayer);
+            checkDuplicates();
           })
-          .catch(err => {
-            // non-fatal; silently ignore so admin form still works
-            console.debug('player_names fetch error', err);
-          });
+          .catch(err => console.debug('player_names fetch error', err));
       }
-      // Populate on load
+
+      function checkPlayer(inputOrEvent) {
+        const input = inputOrEvent.target ? inputOrEvent.target : inputOrEvent;
+        const name = input.value.trim();
+        const pos = input.dataset.position;
+        const badge = document.getElementById('milestone-' + pos);
+
+        if (!badge) return;
+        badge.style.display = 'none';
+        badge.textContent = '';
+        badge.className = 'milestone-badge'; // reset
+
+        if (name && knownPlayers.hasOwnProperty(name)) {
+          const currentCount = knownPlayers[name];
+          const nextCount = currentCount + 1;
+
+          if (nextCount > 0 && nextCount % 50 === 0) {
+            badge.textContent = `🏆 ${nextCount}th Cap!`;
+            badge.style.display = 'inline-block';
+            badge.classList.add('milestone-major');
+          } else if (nextCount === 1) {
+            badge.textContent = `✨ Debut`;
+            badge.style.display = 'inline-block';
+            badge.classList.add('milestone-debut');
+          }
+        }
+        checkDuplicates();
+      }
+
+      function checkDuplicates() {
+        const inputs = document.querySelectorAll('.player-input');
+        const warning = document.getElementById('duplicate-warning');
+        const seen = {};
+        const duplicates = [];
+
+        inputs.forEach(input => {
+          const val = input.value.trim();
+          if (!val) return;
+          if (seen[val]) {
+            duplicates.push(val);
+            input.classList.add('input-error');
+            // Also mark the first occurrence
+            seen[val].classList.add('input-error');
+          } else {
+            seen[val] = input;
+            input.classList.remove('input-error');
+          }
+        });
+
+        if (duplicates.length > 0) {
+          const uniqueDupes = [...new Set(duplicates)];
+          warning.textContent = 'Warning: Duplicate players selected: ' + uniqueDupes.join(', ');
+          warning.style.display = 'block';
+        } else {
+          warning.style.display = 'none';
+        }
+      }
+
+      const inputs = document.querySelectorAll('.player-input');
+      inputs.forEach(input => {
+        input.addEventListener('input', checkPlayer);
+        input.addEventListener('change', checkPlayer); // for datalist selection
+      });
+
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', populate);
       } else {
@@ -57,6 +156,115 @@
       }
     })();
   </script>
+
+  <style>
+    .form-section {
+      margin-bottom: 2rem;
+      border: 1px solid #eee;
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+
+    .form-section h2 {
+      margin-top: 0;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    .form-grid label {
+      display: flex;
+      flex-direction: column;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .form-grid input {
+      margin-top: 0.25rem;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .player-input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .position-label {
+      font-weight: bold;
+      width: 2.5rem;
+      text-align: right;
+      color: #555;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .player-input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    .milestone-badge {
+      font-size: 0.8rem;
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .milestone-major {
+      background-color: #ffd700;
+      color: #000;
+      border: 1px solid #eec900;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .milestone-debut {
+      background-color: #e0f7fa;
+      color: #006064;
+      border: 1px solid #b2ebf2;
+    }
+
+    .input-error {
+      border-color: #d32f2f !important;
+      background-color: #ffebee;
+    }
+
+    .alert-warning {
+      color: #856404;
+      background-color: #fff3cd;
+      border-color: #ffeeba;
+      padding: 0.75rem 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid transparent;
+      border-radius: 0.25rem;
+    }
+  </style>
+
   <div class="form-actions">
     <button type="submit" class="btn">Add teamsheet</button>
   </div>

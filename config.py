@@ -9,6 +9,5 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Custom config
-    CSV_PATH = os.path.join(basedir, "GRFC_data.csv")
     ADMIN_USER = os.environ.get('ADMIN_USER', 'admin')
     ADMIN_PASS = os.environ.get('ADMIN_PASS', 'password')

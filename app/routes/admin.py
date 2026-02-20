@@ -166,9 +166,18 @@ def delete_match(match_id):
 @bp.route('/player_names', methods=['GET'])
 @admin_required
 def player_names():
-    players = Player.query.order_by(Player.name).all()
-    player_names = [p.name for p in players]
-    return jsonify(player_names)
+    # Return list of {name, count} for all players
+    # We can use a group by query or just iterate if dataset is small. 
+    # Use database aggregation for efficiency.
+    stats = db.session.query(Player.name, func.count(Appearance.id))\
+        .outerjoin(Appearance)\
+        .group_by(Player.id, Player.name)\
+        .order_by(Player.name)\
+        .all()
+    
+    # stats is list of (name, count)
+    data = [{'name': name, 'count': count} for name, count in stats]
+    return jsonify(data)
 
 @bp.route('/duplicates')
 @admin_required

@@ -1,6 +1,6 @@
 # TeamsheetApp
 
-Minimal Flask app to upload a single teamsheet CSV row (same format as `GRFC_data.csv`) and show player appearance statistics.
+Minimal Flask app to manage teamsheets and show player appearance statistics.
 
 Quick start (Windows / PowerShell):
 
@@ -23,11 +23,7 @@ pip install -r requirements.txt
 python app.py
 ```
 
-4. Open `http://127.0.0.1:5000/` in your browser, paste one CSV row and upload. Then view `Player Appearances`.
-
-Notes:
-- The app appends the provided row to `GRFC_data.csv` in the project root.
-- Appearance counts are computed from the CSV file by detecting the first numeric header column (player position columns).
+4. Open `http://127.0.0.1:5000/` in your browser, upload teamsheet data, and view `Player Appearances`.
 
 ## Deployment to PythonAnywhere
 

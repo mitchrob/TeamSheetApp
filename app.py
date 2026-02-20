@@ -2,7 +2,6 @@ from flask import Flask, request, redirect, url_for, render_template, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, case
 from functools import wraps
-import csv
 import io
 import os
 from collections import Counter
@@ -44,8 +43,6 @@ class Appearance(db.Model):
     position = db.Column(db.Integer, nullable=False) # 1-15 for starts, 16-20 for bench
     player = db.relationship('Player', back_populates='appearances')
     match = db.relationship('Match', back_populates='appearances')
-
-CSV_PATH = os.path.join(os.path.dirname(__file__), "GRFC_data.csv")
 
 def get_most_recent_teamsheet_from_db():
     """Return the most recent teamsheet from the DB as a dict for form defaults."""
@@ -706,85 +703,3 @@ def init_db_command():
     # db.create_all() needs this to know which app instance to work with.
     db.create_all()
     print('Initialized the database.')
-
-@app.cli.command('migrate-csv')
-def migrate_csv_command():
-    """Migrate data from GRFC_data.csv to the database."""
-
-    def read_rows():
-        """Read CSV rows (including header) as lists of fields."""
-        rows = []
-        if not os.path.exists(CSV_PATH):
-            return rows
-        with open(CSV_PATH, newline='', encoding='utf-8') as f:
-            reader = csv.reader(f, skipinitialspace=True)
-            for row in reader:
-                # skip empty lines
-                if not any(cell.strip() for cell in row):
-                    continue
-                rows.append([cell.strip() for cell in row])
-        return rows
-
-    if not os.path.exists(CSV_PATH):
-        CSV_PATH = os.path.join(os.path.dirname(__file__), "GRFC_data.csv")
-        print(f"Error: {CSV_PATH} not found.")
-        return
-
-    rows = read_rows()
-    if not rows or len(rows) < 2:
-        print("CSV file is empty or contains only a header.")
-        return
-
-    def find_player_start_index(header_row):
-        """Detect the first column index that represents player positions (1,2,3...)."""
-        for i, h in enumerate(header_row):
-            if h.strip().isdigit():
-                return i
-        # fallback: assume player columns start at column 8 (common in this CSV)
-        return 8
-
-
-    header = rows[0]
-    player_start = find_player_start_index(header)
-    player_cache = {} # Cache player objects to avoid DB lookups
-
-    with app.app_context():
-        for row in rows[1:]:
-            # Parse match data
-            date_str = row[2] if len(row) > 2 else ''
-            match_date = parse_date_safe(date_str)
-            if not match_date:
-                print(f"Skipping row with unparseable date: {date_str}")
-                continue
-
-            new_match = Match(
-                league=row[0],
-                season=row[1],
-                date=match_date,
-                opposition=row[3],
-                location=row[4],
-                result=row[5],
-                guildford_points=int(row[6]) if row[6].isdigit() else None,
-                opposition_points=int(row[7]) if row[7].isdigit() else None,
-            )
-            db.session.add(new_match)
-
-            # Parse players and create appearances
-            for i, player_name in enumerate(row[player_start:player_start + 20]):
-                player_name = player_name.strip()
-                if not player_name:
-                    continue
-                
-                player = player_cache.get(player_name)
-                if not player:
-                    player = Player.query.filter_by(name=player_name).first()
-                    if not player:
-                        player = Player(name=player_name)
-                        db.session.add(player)
-                    player_cache[player_name] = player
-                
-                appearance = Appearance(player=player, match=new_match, position=i + 1)
-                db.session.add(appearance)
-        
-        db.session.commit()
-    print(f"Successfully migrated {len(rows) - 1} rows from CSV to the database.")
