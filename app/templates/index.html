@@ -41,7 +41,7 @@
   </div>
 
   <div class="col-md-4">
-    <div class="card mb-4 h-100">
+    <div class="card mb-4">
       <div class="card-header">
         <i class="bi bi-bar-chart-line me-2"></i>Quick Stats
       </div>
@@ -56,6 +56,36 @@
           <a href="{{ url_for('admin.add') }}" class="btn btn-success">Add New Match</a>
           {% endif %}
         </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">
+        <i class="bi bi-award me-2"></i>Milestones & Debuts
+      </div>
+      <div class="card-body">
+        <h6 class="card-subtitle mb-2 text-muted">Upcoming Milestones</h6>
+        {% if upcoming_milestones %}
+        <ul class="list-unstyled">
+          {% for p in upcoming_milestones %}
+          <li><strong>{{ p.name }}</strong>: {{ p.count }} caps (next: {{ p.next_milestone }})</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="small text-muted">No upcoming milestones.</p>
+        {% endif %}
+
+        <hr>
+        <h6 class="card-subtitle mb-2 text-muted">Recent Debuts</h6>
+        {% if recent_debuts %}
+        <ul class="list-unstyled">
+          {% for p in recent_debuts %}
+          <li>{{ p.name }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="small text-muted">No recent debuts.</p>
+        {% endif %}
       </div>
     </div>
   </div>

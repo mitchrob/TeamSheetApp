@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.extensions import db
 from app.models import Player, Match, Appearance
-from app.services import compute_season_stats, get_player_stats, _collect_seasons
+from app.services import compute_season_stats, get_player_stats, _collect_seasons, get_milestones
 from sqlalchemy import func, case
 
 bp = Blueprint('main', __name__)
@@ -17,7 +17,9 @@ def index():
     total_players = Player.query.count()
     total_matches = Match.query.count()
     
-    return render_template('index.html', recent_matches=recent_matches, total_players=total_players, total_matches=total_matches)
+    upcoming_milestones, recent_debuts = get_milestones()
+
+    return render_template('index.html', recent_matches=recent_matches, total_players=total_players, total_matches=total_matches, upcoming_milestones=upcoming_milestones, recent_debuts=recent_debuts)
 
 @bp.route('/stats', methods=['GET'])
 def stats():

@@ -217,3 +217,34 @@ def find_potential_duplicates(player_names_to_check, all_player_names, threshold
                 if score >= threshold:
                     errors.append(f"'{name}' is not an existing player. Did you mean '{best_match}'?")
     return errors
+
+def get_milestones():
+    """Find players approaching appearance milestones or who have recently debuted."""
+    stats = db.session.query(Player.name, func.count(Appearance.id))\
+        .join(Appearance)\
+        .group_by(Player.name)\
+        .all()
+
+    upcoming_milestones = []
+    recent_debuts = []
+
+    for name, count in stats:
+        # Check if approaching a multiple of 50 (e.g. 48, 49)
+        if count > 0 and count % 50 in (48, 49):
+            next_milestone = ((count // 50) + 1) * 50
+            upcoming_milestones.append({
+                'name': name,
+                'count': count,
+                'next_milestone': next_milestone
+            })
+        elif count == 1:
+            recent_debuts.append({
+                'name': name,
+                'count': count
+            })
+
+    # Sort upcoming milestones by how close they are (descending count), then by name
+    upcoming_milestones.sort(key=lambda x: (-x['count'], x['name']))
+    recent_debuts.sort(key=lambda x: x['name'])
+
+    return upcoming_milestones, recent_debuts
