@@ -1,8 +1,36 @@
+import re
 from app.extensions import db
 from app.models import Match, Player, Appearance
 from sqlalchemy import func, case
 from collections import Counter
 from thefuzz import process as fuzz_process, fuzz
+
+def get_previous_season(season, all_seasons):
+    """
+    Find the previous season based on a list of sorted seasons (most recent first)
+    or fallback to regex calculation.
+    """
+    prev_season = None
+    if all_seasons and season in all_seasons:
+        idx = all_seasons.index(season)
+        if idx + 1 < len(all_seasons):
+            prev_season = all_seasons[idx + 1]
+
+    if prev_season is None:
+        try:
+            m = re.match(r'^\s*(\d{4})\s*-\s*(\d{2,4})\s*$', season)
+            if m:
+                start = int(m.group(1))
+                prev_start = start - 1
+                prev_end = (prev_start + 1) % 100
+                candidate = f"{prev_start}-{prev_end:02d}"
+                if all_seasons and candidate in all_seasons:
+                    prev_season = candidate
+                else:
+                    prev_season = candidate # simplified assumption
+        except Exception:
+            pass
+    return prev_season
 
 def _collect_seasons(matches=None):
     if matches is None:
@@ -91,30 +119,8 @@ def compute_season_stats(season):
     debut_pct = (debut_count / total_players_used * 100.0) if total_players_used > 0 else 0.0
 
     # find previous season
-    # Note: this might be inefficient if called often, but matches current logic
     all_seasons = _collect_seasons() 
-    prev_season = None
-    if season in all_seasons:
-        idx = all_seasons.index(season)
-        if idx + 1 < len(all_seasons):
-            prev_season = all_seasons[idx + 1]
-
-    # fallback logic for prev_season if not found in list (regex) - kept from original
-    if prev_season is None:
-        try:
-            import re
-            m = re.match(r'^\s*(\d{4})\s*-\s*(\d{2,4})\s*$', season)
-            if m:
-                start = int(m.group(1))
-                prev_start = start - 1
-                prev_end = (prev_start + 1) % 100
-                candidate = f"{prev_start}-{prev_end:02d}"
-                if candidate in all_seasons:
-                    prev_season = candidate
-                else:
-                    prev_season = candidate # simplified assumption
-        except Exception:
-            pass
+    prev_season = get_previous_season(season, all_seasons)
 
     leavers = []
     leavers_count = 0
