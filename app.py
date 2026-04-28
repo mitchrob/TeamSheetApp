@@ -2,7 +2,6 @@ from flask import Flask, request, redirect, url_for, render_template, flash, ses
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, case
 from functools import wraps
-import io
 import os
 from collections import Counter
 from datetime import datetime
