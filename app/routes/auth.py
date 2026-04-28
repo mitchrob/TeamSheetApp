@@ -11,10 +11,10 @@ def login():
         pw = request.form.get('password', '').strip()
         # Access config from current app (or use os.environ as fallback, but better via app config)
         from flask import current_app
-        admin_user = current_app.config.get('ADMIN_USER', 'admin')
-        admin_pass = current_app.config.get('ADMIN_PASS', 'password')
+        admin_user = current_app.config.get('ADMIN_USER')
+        admin_pass = current_app.config.get('ADMIN_PASS')
         
-        if user == admin_user and pw == admin_pass:
+        if admin_user and admin_pass and user == admin_user and pw == admin_pass:
             session['admin'] = True
             # Validate next_url to minimize open redirect vulnerability? 
             # For now keep existing behavior but adapt for blueprints if needed.

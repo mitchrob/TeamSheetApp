@@ -9,8 +9,8 @@ from datetime import datetime
 from thefuzz import process as fuzz_process, fuzz
 
 app = Flask(__name__)
-# Use an environment-provided SECRET_KEY in production (recommended).
-app.secret_key = os.environ.get('SECRET_KEY', 'change-me-for-production')
+# Use an environment-provided SECRET_KEY.
+app.secret_key = os.environ.get('SECRET_KEY')
 
 # --- Database Configuration ---
 default_db_uri = 'sqlite:///' + os.path.join(os.path.dirname(__file__), 'app.db')
@@ -317,9 +317,9 @@ def login():
     if request.method == 'POST':
         user = request.form.get('username', '').strip()
         pw = request.form.get('password', '').strip()
-        admin_user = os.environ.get('ADMIN_USER', 'admin')
-        admin_pass = os.environ.get('ADMIN_PASS', 'password')
-        if user == admin_user and pw == admin_pass:
+        admin_user = os.environ.get('ADMIN_USER')
+        admin_pass = os.environ.get('ADMIN_PASS')
+        if admin_user and admin_pass and user == admin_user and pw == admin_pass:
             session['admin'] = True
             next_url = request.args.get('next') or request.form.get('next') or url_for('add')
             return redirect(next_url)
