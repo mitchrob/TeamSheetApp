@@ -7,6 +7,7 @@ import os
 from collections import Counter
 from datetime import datetime
 from thefuzz import process as fuzz_process, fuzz
+import re
 
 app = Flask(__name__)
 # Use an environment-provided SECRET_KEY in production (recommended).
@@ -536,7 +537,6 @@ def compute_season_stats(season):
 
     if prev_season is None:
         try:
-            import re
             m = re.match(r'^\s*(\d{4})\s*-\s*(\d{2,4})\s*$', season)
             if m:
                 start = int(m.group(1))
