@@ -3,7 +3,7 @@ from app.extensions import db
 from app.models import Match, Player, Appearance
 from app.utils import admin_required, parse_date_safe
 from app.services import find_potential_duplicates, _collect_seasons
-from app.services import find_potential_duplicates, _collect_seasons
+from thefuzz import process as fuzz_process, fuzz
 
 from sqlalchemy import func
 from collections import Counter
@@ -187,7 +187,6 @@ def view_duplicates():
     all_player_names = [p.name for p in players]
     
     # We can probably move this logic to logic.py/services.py if we want, but for now it's fine
-    from thefuzz import process as fuzz_process, fuzz
     duplicate_groups_of_names = []
     processed_names = set()
 
