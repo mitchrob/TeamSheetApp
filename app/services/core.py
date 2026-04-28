@@ -2,6 +2,7 @@ import re
 from app.extensions import db
 from app.models import Match, Player, Appearance
 from sqlalchemy import func, case
+from sqlalchemy.orm import joinedload
 from collections import Counter
 from thefuzz import process as fuzz_process, fuzz
 
@@ -174,7 +175,7 @@ def get_player_stats(name):
     if not player:
         return None
 
-    player_appearances = Appearance.query.filter_by(player_id=player.id).join(Match).order_by(Match.date.desc()).all()
+    player_appearances = Appearance.query.filter_by(player_id=player.id).join(Match).options(joinedload(Appearance.match)).order_by(Match.date.desc()).all()
     if not player_appearances:
         return None
 
@@ -184,10 +185,8 @@ def get_player_stats(name):
     wins = sum(1 for a in player_appearances if (a.match.result or '').lower() == 'win')
     win_pct = (wins / total_matches * 100.0) if total_matches > 0 else 0.0
 
-    first_app = Appearance.query.filter_by(player_id=player.id).join(Match).order_by(Match.date.asc()).first()
-    last_app = Appearance.query.filter_by(player_id=player.id).join(Match).order_by(Match.date.desc()).first()
-    first_date = first_app.match.date if first_app else None
-    last_date = last_app.match.date if last_app else None
+    first_date = player_appearances[-1].match.date if player_appearances else None
+    last_date = player_appearances[0].match.date if player_appearances else None
 
     # compute distribution by shirt number
     shirt_counts = Counter()
