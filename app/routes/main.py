@@ -64,10 +64,17 @@ def stats():
 
 @bp.route('/data', methods=['GET'])
 def data_view():
-    matches = Match.query.order_by(Match.date.desc()).all()
-    # Explicitly count appearances to avoid template lazy loading issues
-    for m in matches:
-        m.app_count = len(m.appearances)
+    # Fix N+1 issue by using a single query to group and count appearances
+    matches_with_counts = db.session.query(Match, func.count(Appearance.id))\
+        .outerjoin(Appearance)\
+        .group_by(Match.id)\
+        .order_by(Match.date.desc()).all()
+
+    matches = []
+    for m, count in matches_with_counts:
+        m.app_count = count
+        matches.append(m)
+
     return render_template('data.html', matches=matches)
 
 @bp.route('/season', methods=['GET'])
