@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 import os
+from app.utils import is_safe_url
 
 bp = Blueprint('auth', __name__)
 
@@ -16,13 +17,10 @@ def login():
         
         if user == admin_user and pw == admin_pass:
             session['admin'] = True
-            # Validate next_url to minimize open redirect vulnerability? 
-            # For now keep existing behavior but adapt for blueprints if needed.
+            # Validate next_url to minimize open redirect vulnerability
             next_url = request.args.get('next') or request.form.get('next')
-            # If next_url is absolute or not strictly local, might want to be careful.
-            # But simplifying: return to dashboard or add
-            if not next_url:
-                next_url = url_for('admin.add') # default to add for now
+            if not is_safe_url(next_url, request.host_url):
+                next_url = url_for('admin.add')
             return redirect(next_url)
         else:
             flash('Invalid credentials', 'error')
