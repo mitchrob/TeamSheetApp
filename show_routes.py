@@ -1,8 +1,8 @@
 import traceback
 
 try:
-    import app as app_module  # import your app.py module
-    flask_app = app_module.app  # the Flask() instance inside app.py
+    from app import create_app  # import application factory
+    flask_app = create_app()
 
     rules = sorted([r.rule for r in flask_app.url_map.iter_rules()])
     print("Registered routes:")
