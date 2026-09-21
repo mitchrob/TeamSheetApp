@@ -1,5 +1,5 @@
 from app.extensions import db
-from app.models import Appearance, Match, Player
+from app.models import Appearance, AuditEvent, Match, Player
 
 
 def _valid_match_data(**updates):
@@ -72,6 +72,22 @@ def test_public_data_view_hides_admin_controls(client, match_factory):
     assert f"/match/{match.id}".encode() in response.data
     assert b">Edit<" not in response.data
     assert b">Delete<" not in response.data
+
+
+def test_delete_match_removes_appearances_and_records_activity(client, login, match_factory, appearance_factory):
+    login()
+    match = match_factory(opposition="Delete Me")
+    appearance_factory(match, "Delete Test Player", position=1)
+
+    response = client.post(f"/delete/{match.id}", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert b"Match deleted successfully" in response.data
+    assert db.session.get(Match, match.id) is None
+    assert Appearance.query.filter_by(match_id=match.id).count() == 0
+
+    event = AuditEvent.query.filter_by(action="delete", entity_type="match", entity_id=str(match.id)).one()
+    assert "Delete Me" in event.description
 
 
 def test_merge_removes_same_match_conflict(client, login, match_factory):
