@@ -1,19 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Admin Login{% endblock %}
+{% block title %}Administrator Login{% endblock %}
 {% block content %}
-<h1>Admin Login</h1>
-{# flashes shown in base.html #}
-<form method="post" action="{{ url_for('auth.login', next=request.args.get('next') or '') }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-  <input type="hidden" name="next" value="{{ next }}">
-  <div>
-    <label>Username: <input type="text" name="username" autofocus></label>
-  </div>
-  <div>
-    <label>Password: <input type="password" name="password"></label>
-  </div>
-  <div>
-    <button type="submit">Login</button>
-  </div>
-</form>
+<div class="auth-card card"><div class="card-body p-4 p-md-5"><p class="eyebrow">Administration</p><h1 class="h2">Welcome back</h1><p class="text-muted">Sign in with your named administrator account.</p>
+<form method="post" action="{{ url_for('auth.login', next=request.args.get('next') or '') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="next" value="{{ next }}">
+<div class="mb-3"><label class="form-label" for="username">Username</label><input class="form-control form-control-lg" type="text" id="username" name="username" required autofocus autocomplete="username"></div>
+<div class="mb-4"><label class="form-label" for="password">Password</label><input class="form-control form-control-lg" type="password" id="password" name="password" required autocomplete="current-password"></div>
+<button type="submit" class="btn btn-primary btn-lg w-100">Login</button></form></div></div>
 {% endblock %}

@@ -72,7 +72,7 @@
   <input class="search form-control" placeholder="Search" />
   <br>
   <div class="table-responsive">
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover responsive-table">
       <caption class="visually-hidden">Player leaderboard for {{ stats.season }}</caption>
       <thead>
         <tr>
@@ -85,10 +85,10 @@
       <tbody class="list">
         {% for name, counts in stats.leaderboard %}
         <tr>
-          <td class="player"><a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a></td>
-          <td class="starts">{{ counts.starts }}</td>
-          <td class="bench">{{ counts.bench }}</td>
-          <td class="total">{{ counts.total }}</td>
+          <td data-label="Player" class="player"><a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a></td>
+          <td data-label="Starts" class="starts">{{ counts.starts }}</td>
+          <td data-label="Bench" class="bench">{{ counts.bench }}</td>
+          <td data-label="Total" class="total">{{ counts.total }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -121,7 +121,7 @@
 
 <h2>Matches</h2>
 <div class="table-responsive">
-  <table class="table table-striped table-hover">
+  <table class="table table-striped table-hover responsive-table">
     <caption class="visually-hidden">Matches in {{ stats.season }}</caption>
     <thead>
       <tr>
@@ -136,12 +136,7 @@
     <tbody class="clickable-rows">
       {% for m in stats.match_list %}
       <tr data-href="{{ url_for('main.match_view', match_id=m.id) }}">
-        <td>{{ m.date.strftime('%d/%m/%Y') }}</td>
-        <td>{{ m.opposition }}</td>
-        <td>{{ m.location }}</td>
-        <td>{{ m.result }}</td>
-        <td>{{ m.guildford_points if m.guildford_points is not none else 'N/A' }}</td>
-        <td>{{ m.opposition_points if m.opposition_points is not none else 'N/A' }}</td>
+        <td data-label="Date">{{ m.date.strftime('%d/%m/%Y') }}</td><td data-label="Opposition">{{ m.opposition }}</td><td data-label="Location">{{ m.location }}</td><td data-label="Result">{{ m.result }}</td><td data-label="GF">{{ m.guildford_points if m.guildford_points is not none else 'N/A' }}</td><td data-label="GA">{{ m.opposition_points if m.opposition_points is not none else 'N/A' }}</td>
       </tr>
       {% endfor %}
     </tbody>

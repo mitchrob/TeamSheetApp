@@ -1,14 +1,32 @@
-from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
+import csv
+import io
+import secrets
+
+from flask import (
+    Blueprint,
+    Response,
+    current_app,
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 from thefuzz import fuzz
 from thefuzz import process as fuzz_process
+from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.forms import validate_match_form
-from app.models import Appearance, Match, Player
+from app.models import AdminUser, Appearance, AuditEvent, Match, Player
 from app.services import find_potential_duplicates
-from app.utils import admin_required
+from app.utils import admin_required, normalize_username
 
 bp = Blueprint("admin", __name__)
 
@@ -30,21 +48,29 @@ def get_most_recent_teamsheet_from_db():
     if not last_match:
         return defaults
 
-    players = [""] * squad_size
-    for appearance in last_match.appearances:
-        if 1 <= appearance.position <= squad_size:
-            players[appearance.position - 1] = appearance.player.name
     return {
         "league": last_match.league or "",
         "season": last_match.season,
-        "date": last_match.date.isoformat(),
-        "opposition": last_match.opposition,
+        "date": "",
+        "opposition": "",
         "location": last_match.location or "",
-        "result": last_match.result or "",
-        "guildford_points": last_match.guildford_points if last_match.guildford_points is not None else "",
-        "opposition_points": last_match.opposition_points if last_match.opposition_points is not None else "",
-        "players": players,
+        "result": "",
+        "guildford_points": "",
+        "opposition_points": "",
+        "players": [""] * squad_size,
     }
+
+
+def _record_audit(action, entity_type, entity_id, description):
+    db.session.add(
+        AuditEvent(
+            actor_user_id=g.admin_user.id if g.admin_user else None,
+            action=action,
+            entity_type=entity_type,
+            entity_id=str(entity_id) if entity_id is not None else None,
+            description=description[:255],
+        )
+    )
 
 
 def _validate_and_prepare_form():
@@ -88,6 +114,8 @@ def add():
         match = Match(**data)
         db.session.add(match)
         _replace_appearances(match, players)
+        db.session.flush()
+        _record_audit("create", "match", match.id, f"Created match against {match.opposition}")
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
@@ -135,6 +163,7 @@ def edit_match(match_id):
         for field, value in data.items():
             setattr(match, field, value)
         _replace_appearances(match, players)
+        _record_audit("edit", "match", match.id, f"Edited match against {match.opposition}")
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
@@ -153,7 +182,9 @@ def edit_match(match_id):
 def delete_match(match_id):
     match = db.get_or_404(Match, match_id)
     try:
+        description = f"Deleted match against {match.opposition} on {match.date.isoformat()}"
         db.session.delete(match)
+        _record_audit("delete", "match", match_id, description)
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
@@ -175,6 +206,32 @@ def player_names():
         .all()
     )
     return jsonify([{"name": name, "count": count} for name, count in stats])
+
+
+@bp.route("/admin/recent-lineups")
+@admin_required
+def recent_lineups():
+    squad_size = current_app.config["MAX_SQUAD_SIZE"]
+    matches = (
+        Match.query.options(selectinload(Match.appearances).joinedload(Appearance.player))
+        .order_by(Match.date.desc(), Match.id.desc())
+        .limit(20)
+        .all()
+    )
+    payload = []
+    for match in matches:
+        players = [""] * squad_size
+        for appearance in match.appearances:
+            if 1 <= appearance.position <= squad_size:
+                players[appearance.position - 1] = appearance.player.name
+        payload.append(
+            {
+                "id": match.id,
+                "label": f"{match.date.strftime('%d/%m/%Y')} vs {match.opposition}",
+                "players": players,
+            }
+        )
+    return jsonify(payload)
 
 
 @bp.route("/duplicates")
@@ -238,6 +295,12 @@ def merge_players():
                 else:
                     appearance.player = canonical
             db.session.delete(player)
+        _record_audit(
+            "merge",
+            "player",
+            canonical.id,
+            f"Merged {len(players_to_remove)} player records into {canonical_name}",
+        )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
@@ -246,3 +309,164 @@ def merge_players():
     else:
         flash(f'Successfully merged {len(players_to_remove)} player(s) into "{canonical_name}".', "success")
     return redirect(url_for("admin.view_duplicates"))
+
+
+@bp.route("/admin/users", methods=["GET", "POST"])
+@admin_required
+def users():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        normalized = normalize_username(username)
+        if not normalized:
+            flash("Username is required.", "error")
+        elif len(username) > 80:
+            flash("Username must be 80 characters or fewer.", "error")
+        elif AdminUser.query.filter_by(normalized_username=normalized).first():
+            flash("That username is already in use.", "error")
+        else:
+            temporary_password = secrets.token_urlsafe(12)
+            user = AdminUser(
+                username=username,
+                normalized_username=normalized,
+                password_hash=generate_password_hash(temporary_password),
+                must_change_password=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            _record_audit("create", "admin_user", user.id, f"Created administrator {user.username}")
+            db.session.commit()
+            if g.admin_user is None:
+                session.pop("legacy_admin", None)
+                session["admin_user_id"] = user.id
+            flash(
+                f"Administrator created. Temporary password for {user.username}: {temporary_password}",
+                "success",
+            )
+            return redirect(url_for("admin.users"))
+    accounts = AdminUser.query.order_by(AdminUser.username).all()
+    return render_template("admin_users.html", accounts=accounts)
+
+
+@bp.route("/admin/users/<int:user_id>/reset", methods=["POST"])
+@admin_required
+def reset_user_password(user_id):
+    user = db.get_or_404(AdminUser, user_id)
+    temporary_password = secrets.token_urlsafe(12)
+    user.password_hash = generate_password_hash(temporary_password)
+    user.must_change_password = True
+    _record_audit("reset", "admin_user", user.id, f"Reset password for {user.username}")
+    db.session.commit()
+    flash(f"Temporary password for {user.username}: {temporary_password}", "success")
+    return redirect(url_for("admin.users"))
+
+
+@bp.route("/admin/users/<int:user_id>/toggle", methods=["POST"])
+@admin_required
+def toggle_user(user_id):
+    user = db.get_or_404(AdminUser, user_id)
+    if g.admin_user and user.id == g.admin_user.id:
+        flash("You cannot deactivate your own account.", "error")
+        return redirect(url_for("admin.users"))
+    if user.is_active and AdminUser.query.filter_by(is_active=True).count() <= 1:
+        flash("The final active administrator cannot be deactivated.", "error")
+        return redirect(url_for("admin.users"))
+    user.is_active = not user.is_active
+    action = "activate" if user.is_active else "deactivate"
+    _record_audit(action, "admin_user", user.id, f"{action.title()}d administrator {user.username}")
+    db.session.commit()
+    flash(f"{user.username} is now {'active' if user.is_active else 'inactive'}.", "success")
+    return redirect(url_for("admin.users"))
+
+
+@bp.route("/admin/activity")
+@admin_required
+def activity():
+    events = AuditEvent.query.options(selectinload(AuditEvent.actor)).order_by(AuditEvent.created_at.desc()).limit(250).all()
+    return render_template("activity.html", events=events)
+
+
+@bp.route("/admin/data-quality")
+@admin_required
+def data_quality():
+    season = request.args.get("season", "").strip()
+    completeness = request.args.get("completeness", "").strip()
+    opponent = request.args.get("opponent", "").strip()
+    result = request.args.get("result", "").strip()
+    query = Match.query.options(selectinload(Match.appearances))
+    if season:
+        query = query.filter(Match.season == season)
+    if opponent:
+        query = query.filter(Match.opposition.ilike(f"%{opponent}%"))
+    if result:
+        query = query.filter(Match.result == result)
+    matches = query.order_by(Match.date.desc()).all()
+    rows = []
+    squad_size = current_app.config["MAX_SQUAD_SIZE"]
+    for match in matches:
+        issues = []
+        if len(match.appearances) < squad_size:
+            issues.append(f"Incomplete teamsheet ({len(match.appearances)}/{squad_size})")
+        if match.guildford_points is None or match.opposition_points is None:
+            issues.append("Missing score")
+        if not match.season or not match.opposition or not match.date:
+            issues.append("Empty required field")
+        if not issues:
+            continue
+        if completeness == "teamsheet" and not any("teamsheet" in issue for issue in issues):
+            continue
+        if completeness == "score" and "Missing score" not in issues:
+            continue
+        rows.append({"match": match, "issues": issues})
+
+    names = [player.name for player in Player.query.order_by(Player.name).all()]
+    duplicate_pairs = []
+    for index, name in enumerate(names):
+        for other in names[index + 1:]:
+            score = fuzz.token_sort_ratio(name, other)
+            if score >= 90:
+                duplicate_pairs.append((name, other, score))
+    seasons = [row[0] for row in db.session.query(Match.season).distinct().order_by(Match.season.desc()).all()]
+    return render_template(
+        "data_quality.html", rows=rows, duplicate_pairs=duplicate_pairs, seasons=seasons,
+        filters={"season": season, "completeness": completeness, "opponent": opponent, "result": result},
+    )
+
+
+def _csv_response(filename, headers, rows):
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@bp.route("/admin/export/matches.csv")
+@admin_required
+def export_matches():
+    rows = (
+        (match.id, match.date.isoformat(), match.season, match.league or "", match.opposition,
+         match.location or "", match.result or "", match.guildford_points if match.guildford_points is not None else "",
+         match.opposition_points if match.opposition_points is not None else "")
+        for match in Match.query.order_by(Match.date, Match.id).all()
+    )
+    return _csv_response("matches.csv", ["id", "date", "season", "league", "opposition", "location", "result", "guildford_points", "opposition_points"], rows)
+
+
+@bp.route("/admin/export/appearances.csv")
+@admin_required
+def export_appearances():
+    appearances = Appearance.query.options(selectinload(Appearance.player), selectinload(Appearance.match)).order_by(Appearance.match_id, Appearance.position).all()
+    rows = ((item.id, item.match_id, item.match.date.isoformat(), item.player_id, item.player.name, item.position, "Start" if item.position <= 15 else "Replacement") for item in appearances)
+    return _csv_response("appearances.csv", ["id", "match_id", "date", "player_id", "player_name", "position", "appearance_type"], rows)
+
+
+@bp.route("/admin/export/players.csv")
+@admin_required
+def export_players():
+    players = Player.query.options(selectinload(Player.appearances)).order_by(Player.name).all()
+    rows = ((player.id, player.name, len(player.appearances), sum(1 for item in player.appearances if item.position <= 15), sum(1 for item in player.appearances if item.position > 15)) for player in players)
+    return _csv_response("players.csv", ["id", "name", "appearances", "starts", "replacements"], rows)

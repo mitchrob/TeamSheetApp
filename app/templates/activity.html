@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Admin Activity{% endblock %}
+{% block content %}
+<p class="eyebrow">Administration</p><h1>Activity history</h1>
+{% if events %}<div class="table-responsive"><table class="table responsive-table"><caption class="visually-hidden">Recent administrator activity</caption><thead><tr><th>When</th><th>Administrator</th><th>Action</th><th>Details</th></tr></thead><tbody>{% for event in events %}<tr><td data-label="When">{{ event.created_at.strftime('%d/%m/%Y %H:%M') }}</td><td data-label="Administrator">{{ event.actor.username if event.actor else 'Environment/CLI' }}</td><td data-label="Action">{{ event.action|replace('_', ' ')|title }}</td><td data-label="Details">{{ event.description }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><h2>No activity yet</h2><p>Administrator changes will appear here.</p></div>{% endif %}
+{% endblock %}

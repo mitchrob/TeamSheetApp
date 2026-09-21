@@ -84,3 +84,18 @@ def test_production_requires_security_configuration():
 
     with pytest.raises(RuntimeError, match="Missing required production configuration"):
         create_app(UnsafeProductionConfig)
+
+
+def test_production_can_use_database_admins_without_shared_credentials():
+    class DatabaseAdminProductionConfig:
+        ENVIRONMENT = "production"
+        SECRET_KEY = "a-production-secret"
+        ADMIN_USER = None
+        ADMIN_PASSWORD_HASH = None
+        SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+        SQLALCHEMY_TRACK_MODIFICATIONS = False
+        SESSION_COOKIE_SECURE = True
+        RATELIMIT_STORAGE_URI = "memory://"
+
+    app = create_app(DatabaseAdminProductionConfig)
+    assert app.config["ADMIN_USER"] is None

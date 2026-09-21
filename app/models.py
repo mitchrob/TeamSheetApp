@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import CheckConstraint, UniqueConstraint
 
 from app.extensions import db
@@ -51,3 +53,36 @@ class Appearance(db.Model):
         UniqueConstraint("match_id", "position", name="uq_appearance_match_position"),
         CheckConstraint("position BETWEEN 1 AND 23", name="ck_appearance_position"),
     )
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
+
+
+class AdminUser(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), nullable=False)
+    normalized_username = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    must_change_password = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now)
+    last_login_at = db.Column(db.DateTime(timezone=True))
+    audit_events = db.relationship("AuditEvent", back_populates="actor", lazy="selectin")
+
+    __table_args__ = (
+        CheckConstraint("length(trim(username)) BETWEEN 1 AND 80", name="ck_admin_user_username_length"),
+    )
+
+
+class AuditEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    actor_user_id = db.Column(
+        db.Integer, db.ForeignKey("admin_user.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    action = db.Column(db.String(50), nullable=False, index=True)
+    entity_type = db.Column(db.String(50), nullable=False)
+    entity_id = db.Column(db.String(80))
+    description = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+    actor = db.relationship("AdminUser", back_populates="audit_events")

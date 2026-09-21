@@ -51,7 +51,7 @@
 
 <h2>All teamsheets containing {{ stats.name }}</h2>
 <div class="table-responsive">
-  <table class="table table-hover">
+  <table class="table table-hover responsive-table">
     <caption class="visually-hidden">All appearances by {{ stats.name }}</caption>
     <thead>
       <tr>
@@ -67,14 +67,14 @@
     <tbody>
       {% for a in stats.appearances %}
       <tr class="clickable-row" data-href="{{ url_for('main.match_view', match_id=a.match.id) }}">
-        <td>{{ a.match.date.strftime('%d/%m/%Y') }}</td>
-        <td>{{ a.match.season }}</td>
-        <td>{{ a.match.opposition }}</td>
-        <td>{{ a.match.location }}</td>
-        <td>{{ a.match.result }}</td>
-        <td>{{ a.match.guildford_points if a.match.guildford_points is not none else 'N/A' }} - {{
+        <td data-label="Date">{{ a.match.date.strftime('%d/%m/%Y') }}</td>
+        <td data-label="Season">{{ a.match.season }}</td>
+        <td data-label="Opposition">{{ a.match.opposition }}</td>
+        <td data-label="Location">{{ a.match.location }}</td>
+        <td data-label="Result">{{ a.match.result }}</td>
+        <td data-label="Score">{{ a.match.guildford_points if a.match.guildford_points is not none else 'N/A' }} - {{
           a.match.opposition_points if a.match.opposition_points is not none else 'N/A' }}</td>
-        <td>
+        <td data-label="Position">
           {{ a.position }}
           {% if a.position > 15 %}
           (Bench)

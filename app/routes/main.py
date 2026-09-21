@@ -10,16 +10,19 @@ bp = Blueprint('main', __name__)
 
 @bp.route('/', methods=['GET'])
 def index():
-    # Per plan for Phase 1, just partial parity but moving towards Dashboard
-    # Task says: "Instead of redirecting to /add ... create a Dashboard"
-    # I will implement the Dashboard now as requested by user.
-    
     recent_matches = Match.query.order_by(Match.date.desc()).limit(5).all()
-    # Simple summary stats could be added here
     total_players = Player.query.count()
     total_matches = Match.query.count()
-    
-    return render_template('index.html', recent_matches=recent_matches, total_players=total_players, total_matches=total_matches)
+    seasons = _collect_seasons()
+    current_season = compute_season_stats(seasons[0]) if seasons else None
+    return render_template(
+        'index.html',
+        recent_matches=recent_matches,
+        latest_match=recent_matches[0] if recent_matches else None,
+        current_season=current_season,
+        total_players=total_players,
+        total_matches=total_matches,
+    )
 
 @bp.route('/stats', methods=['GET'])
 def stats():
@@ -27,6 +30,8 @@ def stats():
     order = request.args.get('order', 'desc')
     search_query = request.args.get('search', '')
     show_all = request.args.get('show') == 'all'
+    season = request.args.get('season', '').strip()
+    appearance_type = request.args.get('type', '').strip()
 
     starts_case = case((Appearance.position <= 15, 1), else_=0)
     bench_case = case((Appearance.position > 15, 1), else_=0)
@@ -40,10 +45,16 @@ def stats():
         total_col,
         starts_col,
         bench_col
-    ).join(Appearance).group_by(Player.name)
+    ).join(Appearance).join(Match).group_by(Player.id, Player.name)
 
     if search_query:
         query = query.filter(Player.name.ilike(f'%{search_query}%'))
+    if season:
+        query = query.filter(Match.season == season)
+    if appearance_type == 'start':
+        query = query.filter(Appearance.position <= 15)
+    elif appearance_type == 'replacement':
+        query = query.filter(Appearance.position > 15)
 
     sort_map = {
         'name': Player.name,
@@ -62,15 +73,35 @@ def stats():
         query = query.limit(100)
 
     player_stats = query.all()
-    return render_template('stats.html', players=player_stats, sort_by=sort_by, order=order, show_all=show_all, search_query=search_query)
+    return render_template(
+        'stats.html', players=player_stats, sort_by=sort_by, order=order, show_all=show_all,
+        search_query=search_query, seasons=_collect_seasons(), selected_season=season,
+        appearance_type=appearance_type,
+    )
 
 @bp.route('/data', methods=['GET'])
 def data_view():
-    matches = Match.query.options(selectinload(Match.appearances)).order_by(Match.date.desc()).all()
-    # Explicitly count appearances to avoid template lazy loading issues
+    season = request.args.get('season', '').strip()
+    opponent = request.args.get('opponent', '').strip()
+    location = request.args.get('location', '').strip()
+    result = request.args.get('result', '').strip()
+    query = Match.query.options(selectinload(Match.appearances))
+    if season:
+        query = query.filter(Match.season == season)
+    if opponent:
+        query = query.filter(Match.opposition.ilike(f'%{opponent}%'))
+    if location:
+        query = query.filter(Match.location == location)
+    if result:
+        query = query.filter(Match.result == result)
+    matches = query.order_by(Match.date.desc()).all()
     for m in matches:
         m.app_count = len(m.appearances)
-    return render_template('data.html', matches=matches)
+    locations = [row[0] for row in db.session.query(Match.location).filter(Match.location.isnot(None)).distinct().order_by(Match.location).all() if row[0]]
+    return render_template(
+        'data.html', matches=matches, seasons=_collect_seasons(), locations=locations,
+        filters={'season': season, 'opponent': opponent, 'location': location, 'result': result},
+    )
 
 
 @bp.route("/match/<int:match_id>", methods=["GET"])

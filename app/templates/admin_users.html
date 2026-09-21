@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Administrators{% endblock %}
+{% block content %}
+<p class="eyebrow">Administration</p><h1>Administrators</h1>
+<div class="row g-4">
+  <section class="col-lg-4" aria-labelledby="create-user-heading"><div class="card"><div class="card-body">
+    <h2 id="create-user-heading" class="h4">Create account</h2><p>A one-time temporary password will be shown after creation.</p>
+    <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="form-label" for="username">Username</label><input class="form-control mb-3" id="username" name="username" maxlength="80" required><button class="btn btn-primary" type="submit">Create administrator</button></form>
+  </div></div></section>
+  <section class="col-lg-8" aria-labelledby="accounts-heading"><h2 id="accounts-heading" class="h4">Accounts</h2>
+    {% if accounts %}<div class="table-responsive"><table class="table responsive-table"><caption class="visually-hidden">Administrator accounts</caption><thead><tr><th>Username</th><th>Status</th><th>Last login</th><th>Actions</th></tr></thead><tbody>
+    {% for account in accounts %}<tr><td data-label="Username">{{ account.username }}{% if g.admin_user and account.id == g.admin_user.id %} <span class="badge text-bg-secondary">You</span>{% endif %}</td><td data-label="Status"><span class="status-badge {{ 'status-win' if account.is_active else 'status-loss' }}">{{ 'Active' if account.is_active else 'Inactive' }}</span>{% if account.must_change_password %} <small>Password change required</small>{% endif %}</td><td data-label="Last login">{{ account.last_login_at.strftime('%d/%m/%Y %H:%M') if account.last_login_at else 'Never' }}</td><td data-label="Actions" class="d-flex flex-wrap gap-2"><form method="post" action="{{ url_for('admin.reset_user_password', user_id=account.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-primary">Reset password</button></form><form method="post" action="{{ url_for('admin.toggle_user', user_id=account.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-secondary">{{ 'Deactivate' if account.is_active else 'Reactivate' }}</button></form></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<p>No database administrators exist yet. Create the first one above.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

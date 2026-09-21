@@ -7,12 +7,12 @@
     <h1 class="mb-2">Guildford vs {{ match.opposition }}</h1>
     <p class="lead mb-0">{{ match.date.strftime('%A, %d %B %Y') }}{% if match.location %} · {{ match.location }}{% endif %}</p>
   </div>
-  {% if session.get('admin') %}
+  {% if g.is_admin %}
   <a href="{{ url_for('admin.edit_match', match_id=match.id) }}" class="btn btn-outline-primary">Edit teamsheet</a>
   {% endif %}
 </div>
 
-<section class="match-score card" aria-labelledby="match-result-heading">
+<section class="match-score score-hero" aria-labelledby="match-result-heading">
   <div class="card-body text-center">
     <h2 id="match-result-heading" class="h5">Result</h2>
     <p class="display-6 mb-1">
@@ -20,7 +20,7 @@
       <span aria-hidden="true">–</span>
       {{ match.opposition_points if match.opposition_points is not none else '—' }}
     </p>
-    <span class="badge {{ 'bg-success' if match.result == 'Win' else 'bg-danger' if match.result == 'Loss' else 'bg-warning text-dark' }}">
+    <span class="status-badge status-{{ match.result|lower if match.result else 'draw' }}">
       {{ match.result or 'Result unknown' }}
     </span>
   </div>

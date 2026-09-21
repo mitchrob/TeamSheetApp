@@ -1,49 +1,46 @@
 <form method="post" action="{{ form_action }}" class="teamsheet-form"
-  data-player-url="{{ url_for('admin.player_names') }}">
+  data-player-url="{{ url_for('admin.player_names') }}"
+  data-lineups-url="{{ url_for('admin.recent_lineups') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-  <section class="form-section" aria-labelledby="match-details-heading">
-    <h2 id="match-details-heading">Match details</h2>
-    <div class="form-grid">
+  <details class="form-section" open>
+    <summary><span>Match details</span><small>Date, opposition and result</small></summary>
+    <div class="form-grid section-content">
       <div><label class="form-label" for="league">League</label><input class="form-control" id="league" name="league" maxlength="100" value="{{ values.league }}"></div>
       <div><label class="form-label" for="season">Season</label><input class="form-control" id="season" name="season" required pattern="\d{4}-\d{2}" placeholder="2026-27" value="{{ values.season }}"></div>
       <div><label class="form-label" for="date">Date</label><input class="form-control" type="date" id="date" name="date" required value="{{ values.date }}"></div>
       <div><label class="form-label" for="opposition">Opposition</label><input class="form-control" id="opposition" name="opposition" maxlength="100" required value="{{ values.opposition }}"></div>
       <div><label class="form-label" for="location">Location</label><input class="form-control" id="location" name="location" maxlength="50" value="{{ values.location }}"></div>
-      <div>
-        <label class="form-label" for="result">Result</label>
-        <select class="form-select" id="result" name="result">
-          <option value="">Unknown</option>
-          {% for result in ['Win', 'Draw', 'Loss'] %}<option value="{{ result }}" {% if values.result == result %}selected{% endif %}>{{ result }}</option>{% endfor %}
-        </select>
-      </div>
+      <div><label class="form-label" for="result">Result</label><select class="form-select" id="result" name="result"><option value="">Unknown</option>{% for result in ['Win', 'Draw', 'Loss'] %}<option value="{{ result }}" {% if values.result == result %}selected{% endif %}>{{ result }}</option>{% endfor %}</select></div>
       <div><label class="form-label" for="guildford_points">Guildford points</label><input class="form-control" type="number" min="0" max="999" id="guildford_points" name="guildford_points" value="{{ values.guildford_points }}"></div>
       <div><label class="form-label" for="opposition_points">Opposition points</label><input class="form-control" type="number" min="0" max="999" id="opposition_points" name="opposition_points" value="{{ values.opposition_points }}"></div>
     </div>
+  </details>
+
+  <section class="copy-lineup-panel" aria-labelledby="copy-lineup-heading">
+    <div><h2 id="copy-lineup-heading" class="h5 mb-1">Copy a recent lineup</h2><p class="text-muted mb-0">Only the 23 player slots are copied.</p></div>
+    <div class="copy-lineup-controls"><label class="visually-hidden" for="recent-lineup">Recent match</label><select id="recent-lineup" class="form-select"><option value="">Choose a match…</option></select><button class="btn btn-outline-primary" type="button" id="copy-lineup">Copy lineup</button></div>
   </section>
 
-  <section class="form-section" aria-labelledby="players-heading">
-    <h2 id="players-heading">Players</h2>
-    <p class="text-muted">Positions 1–15 are starts; positions 16–{{ squad_size }} are replacements.</p>
-    <datalist id="playerNames"></datalist>
-    <div class="players-grid">
-      {% for i in range(1, squad_size + 1) %}
-      <div class="player-input-group">
-        <label class="position-label" for="player{{ i }}">{{ i }}</label>
-        <div class="input-wrapper">
-          <input class="form-control player-input" id="player{{ i }}" name="player{{ i }}" list="playerNames"
-            maxlength="100" autocomplete="off" data-position="{{ i }}" value="{{ players[i-1] }}"
-            placeholder="{{ 'Starter' if i <= 15 else 'Replacement' }}">
+  {% for group in [(1, 15, 'Starting XV', 'starting-xv'), (16, squad_size, 'Replacements', 'replacements')] %}
+  <details class="form-section" open>
+    <summary><span>{{ group[2] }}</span><small>Positions {{ group[0] }}–{{ group[1] }}</small></summary>
+    <div class="player-slots section-content" id="{{ group[3] }}">
+      {% for i in range(group[0], group[1] + 1) %}
+      <div class="player-slot" data-slot="{{ i }}">
+        <label class="position-label" for="player{{ i }}"><span class="visually-hidden">Position </span>{{ i }}</label>
+        <div class="picker-wrap">
+          <input class="form-control player-input" id="player{{ i }}" name="player{{ i }}" maxlength="100" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="player-options-{{ i }}" data-position="{{ i }}" value="{{ players[i-1] }}" placeholder="Select player">
+          <div class="player-options" id="player-options-{{ i }}" role="listbox" hidden></div>
           <span class="milestone-badge" id="milestone-{{ i }}" hidden></span>
         </div>
+        <div class="slot-actions" aria-label="Actions for position {{ i }}"><button class="slot-button clear-slot" type="button" aria-label="Clear position {{ i }}">Clear</button><button class="slot-button move-up" type="button" aria-label="Move position {{ i }} up">↑</button><button class="slot-button move-down" type="button" aria-label="Move position {{ i }} down">↓</button></div>
       </div>
       {% endfor %}
     </div>
-    <div id="duplicate-warning" class="alert alert-warning mt-3" role="status" hidden></div>
-  </section>
+  </details>
+  {% endfor %}
 
-  <div class="form-actions">
-    <button type="submit" class="btn btn-primary btn-lg">{{ submit_label }}</button>
-    <a href="{{ url_for('main.data_view') }}" class="btn btn-secondary btn-lg">Cancel</a>
-  </div>
+  <section class="review-summary" aria-labelledby="review-heading" aria-live="polite"><h2 id="review-heading" class="h5">Review</h2><ul id="review-items" class="mb-0"></ul></section>
+  <div class="sticky-form-actions"><span id="form-status" class="form-status" role="status">Reviewing teamsheet…</span><div><a href="{{ url_for('main.data_view') }}" class="btn btn-outline-secondary">Cancel</a> <button type="submit" class="btn btn-primary">{{ submit_label }}</button></div></div>
 </form>
