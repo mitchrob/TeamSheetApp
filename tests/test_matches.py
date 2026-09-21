@@ -9,6 +9,8 @@ def test_public_match_page_shows_teamsheet(client, match_factory, appearance_fac
     assert b"Guildford vs Old Rivals" in response.data
     assert b"Starting Player" in response.data
     assert b"Replacement Player" in response.data
+    assert b'<span class="shirt-number" aria-hidden="true">16</span>' in response.data
+    assert b'<span class="shirt-number" aria-hidden="true">23</span>' in response.data
     assert b"Edit teamsheet" not in response.data
 
 

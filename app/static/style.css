@@ -154,8 +154,24 @@ tr[data-href]:focus-visible,
     margin-bottom: 2rem;
 }
 
-.replacement-list {
-    counter-reset: list-item 15;
+.teamsheet-list .list-group-item {
+    align-items: center;
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: 2rem minmax(0, 1fr);
+}
+
+.shirt-number {
+    align-items: center;
+    background: var(--surface-muted);
+    border-radius: 999px;
+    color: var(--navy-800);
+    display: inline-flex;
+    font-size: .8rem;
+    font-weight: 800;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
 }
 
 .form-section {

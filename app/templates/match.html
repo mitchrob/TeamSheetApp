@@ -32,9 +32,10 @@
   <section class="col-lg-7" aria-labelledby="starting-xv-heading">
     <div class="card h-100">
       <div class="card-header" id="starting-xv-heading">Starting XV</div>
-      <ol class="list-group list-group-numbered list-group-flush">
+      <ol class="list-group list-group-flush teamsheet-list">
         {% for position in range(1, 16) %}
-        <li class="list-group-item">
+        <li class="list-group-item" value="{{ position }}">
+          <span class="shirt-number" aria-hidden="true">{{ position }}</span>
           {% if lineup.get(position) %}
           <a href="{{ url_for('main.player_view', name=lineup[position].name) }}">{{ lineup[position].name }}</a>
           {% else %}<span class="text-muted">Not recorded</span>{% endif %}
@@ -46,9 +47,10 @@
   <section class="col-lg-5" aria-labelledby="replacements-heading">
     <div class="card h-100">
       <div class="card-header" id="replacements-heading">Replacements</div>
-      <ol class="list-group list-group-numbered list-group-flush replacement-list">
+      <ol class="list-group list-group-flush teamsheet-list">
         {% for position in range(16, squad_size + 1) %}
         <li class="list-group-item" value="{{ position }}">
+          <span class="shirt-number" aria-hidden="true">{{ position }}</span>
           {% if lineup.get(position) %}
           <a href="{{ url_for('main.player_view', name=lineup[position].name) }}">{{ lineup[position].name }}</a>
           {% else %}<span class="text-muted">Not recorded</span>{% endif %}
