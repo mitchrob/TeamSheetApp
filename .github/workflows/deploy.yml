@@ -4,9 +4,36 @@ on:
   push:
     branches:
       - main
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Lint
+        run: python -m ruff check .
+      - name: Test
+        run: python -m pytest
+      - name: Verify a fresh migration
+        env:
+          DATABASE_URL: sqlite:///ci-migration.db
+        run: |
+          python -m flask --app run db upgrade
+          python -m flask --app run db check
+
   deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
@@ -16,6 +43,12 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /home/${{ secrets.SSH_USERNAME }}/TeamSheetApp
-            git pull origin main
+            mkdir -p backups
+            if [ -f app.db ]; then cp app.db "backups/app.db.$(date +%Y%m%d-%H%M%S)"; fi
+            git pull --ff-only origin main
+            source /home/${{ secrets.SSH_USERNAME }}/.virtualenvs/teamsheetapp/bin/activate
+            python -m pip install -r requirements.txt
+            python -m flask --app run db upgrade
             touch /var/www/mitchrob_eu_pythonanywhere_com_wsgi.py

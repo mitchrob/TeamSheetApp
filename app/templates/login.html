@@ -4,7 +4,8 @@
 <h1>Admin Login</h1>
 {# flashes shown in base.html #}
 <form method="post" action="{{ url_for('auth.login', next=request.args.get('next') or '') }}">
-  <input type="hidden" name="next" value="{{ request.args.get('next') or '' }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="next" value="{{ next }}">
   <div>
     <label>Username: <input type="text" name="username" autofocus></label>
   </div>

@@ -9,6 +9,7 @@
   <div class="card-body">
     <h5 class="card-title">Merging Group</h5>
     <form method="POST" action="{{ url_for('admin.merge_players') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="mb-3">
         <p><strong>1. Select players to merge:</strong></p>
         {% for player in players %}

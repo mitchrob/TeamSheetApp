@@ -5,7 +5,8 @@
 
 <form method="GET" action="{{ url_for('main.stats') }}" class="form-inline mb-3">
   <div class="form-group">
-    <input type="text" name="search" class="form-control" placeholder="Search player..."
+    <label class="visually-hidden" for="player-search">Search players</label>
+    <input type="search" id="player-search" name="search" class="form-control" placeholder="Search player..."
       value="{{ search_query or '' }}">
   </div>
   <button type="submit" class="btn btn-primary ml-2">Search</button>
@@ -22,7 +23,8 @@
 </p>
 {% endif %}
 <div class="table-responsive">
-  <table class="table table-hover" style="width:100%">
+  <table class="table table-hover w-100">
+    <caption class="visually-hidden">Player appearance totals</caption>
     <thead>
       <tr>
         <th><a

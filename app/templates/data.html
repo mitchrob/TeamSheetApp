@@ -1,16 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Teamsheet Data{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+{% endblock %}
 {% block content %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>All Match Data</h2>
 
 </div>
-<p>This table shows all match data stored in the database. You can edit or delete records from here.</p>
+<p>This table shows all match data stored in the database.{% if session.get('admin') %} Administrators can edit or delete records.{% endif %}</p>
 
 {% if matches %}
 <div class="table-responsive">
-    <table class="table table-striped table-hover datatable" style="width:100%">
+    <table class="table table-striped table-hover datatable w-100">
+        <caption class="visually-hidden">All recorded matches</caption>
         <thead>
             <tr>
                 <th>Date</th>
@@ -18,14 +22,14 @@
                 <th>Opposition</th>
                 <th>Result</th>
                 <th>Score</th>
-                <th>Actions</th>
+                {% if session.get('admin') %}<th>Actions</th>{% endif %}
             </tr>
         </thead>
         <tbody>
             {% for match in matches %}
-            <tr>
+            <tr data-href="{{ url_for('main.match_view', match_id=match.id) }}">
                 <td>
-                    <span style="display:none;">{{ match.date.strftime('%Y%m%d') }}</span>
+                    <span class="d-none">{{ match.date.strftime('%Y%m%d') }}</span>
                     {{ match.date.strftime('%d/%m/%Y') }}
                 </td>
                 <td>{{ match.season }}</td>
@@ -33,19 +37,20 @@
                 <td>{{ match.result }}</td>
                 <td>{{ match.guildford_points if match.guildford_points is not none else 'N/A' }} - {{
                     match.opposition_points if match.opposition_points is not none else 'N/A' }}</td>
-                <td>
+                {% if session.get('admin') %}<td>
                     <a href="{{ url_for('admin.edit_match', match_id=match.id) }}"
                         class="btn btn-sm btn-primary">Edit</a>
                     <form action="{{ url_for('admin.delete_match', match_id=match.id) }}" method="post"
-                        style="display: inline;"
+                        class="d-inline"
                         onsubmit="return confirm('Are you sure you want to delete this match? This action cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>
                     {% if match.app_count == 0 %}
                     <span class="badge bg-danger ms-2" title="No players assigned"><i
                             class="bi bi-exclamation-circle"></i> No Teamsheet</span>
                     {% endif %}
-                </td>
+                </td>{% endif %}
             </tr>
             {% endfor %}
         </tbody>
@@ -55,12 +60,10 @@
 <p>No match data found in the database.</p>
 {% endif %}
 
-<script>
-    $(document).ready(function () {
-        $('.datatable').DataTable({
-            "order": [[0, "desc"]], // Default sort by the first column (date), descending
-            "pageLength": 25
-        });
-    });
-</script>
+{% endblock %}
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="{{ url_for('static', filename='data-table.js') }}?v=1"></script>
 {% endblock %}

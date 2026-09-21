@@ -17,7 +17,8 @@
       <div class="list-group list-group-flush">
         {% if recent_matches %}
         {% for match in recent_matches %}
-        <div class="list-group-item d-flex justify-content-between align-items-center">
+        <div class="list-group-item d-flex justify-content-between align-items-center"
+          data-href="{{ url_for('main.match_view', match_id=match.id) }}">
           <div>
             <span class="fw-bold">{{ match.date.strftime('%d/%m/%Y') }}</span>
             <span

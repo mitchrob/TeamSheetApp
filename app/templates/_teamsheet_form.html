@@ -1,0 +1,49 @@
+<form method="post" action="{{ form_action }}" class="teamsheet-form"
+  data-player-url="{{ url_for('admin.player_names') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <section class="form-section" aria-labelledby="match-details-heading">
+    <h2 id="match-details-heading">Match details</h2>
+    <div class="form-grid">
+      <div><label class="form-label" for="league">League</label><input class="form-control" id="league" name="league" maxlength="100" value="{{ values.league }}"></div>
+      <div><label class="form-label" for="season">Season</label><input class="form-control" id="season" name="season" required pattern="\d{4}-\d{2}" placeholder="2026-27" value="{{ values.season }}"></div>
+      <div><label class="form-label" for="date">Date</label><input class="form-control" type="date" id="date" name="date" required value="{{ values.date }}"></div>
+      <div><label class="form-label" for="opposition">Opposition</label><input class="form-control" id="opposition" name="opposition" maxlength="100" required value="{{ values.opposition }}"></div>
+      <div><label class="form-label" for="location">Location</label><input class="form-control" id="location" name="location" maxlength="50" value="{{ values.location }}"></div>
+      <div>
+        <label class="form-label" for="result">Result</label>
+        <select class="form-select" id="result" name="result">
+          <option value="">Unknown</option>
+          {% for result in ['Win', 'Draw', 'Loss'] %}<option value="{{ result }}" {% if values.result == result %}selected{% endif %}>{{ result }}</option>{% endfor %}
+        </select>
+      </div>
+      <div><label class="form-label" for="guildford_points">Guildford points</label><input class="form-control" type="number" min="0" max="999" id="guildford_points" name="guildford_points" value="{{ values.guildford_points }}"></div>
+      <div><label class="form-label" for="opposition_points">Opposition points</label><input class="form-control" type="number" min="0" max="999" id="opposition_points" name="opposition_points" value="{{ values.opposition_points }}"></div>
+    </div>
+  </section>
+
+  <section class="form-section" aria-labelledby="players-heading">
+    <h2 id="players-heading">Players</h2>
+    <p class="text-muted">Positions 1–15 are starts; positions 16–{{ squad_size }} are replacements.</p>
+    <datalist id="playerNames"></datalist>
+    <div class="players-grid">
+      {% for i in range(1, squad_size + 1) %}
+      <div class="player-input-group">
+        <label class="position-label" for="player{{ i }}">{{ i }}</label>
+        <div class="input-wrapper">
+          <input class="form-control player-input" id="player{{ i }}" name="player{{ i }}" list="playerNames"
+            maxlength="100" autocomplete="off" data-position="{{ i }}" value="{{ players[i-1] }}"
+            placeholder="{{ 'Starter' if i <= 15 else 'Replacement' }}">
+          <span class="milestone-badge" id="milestone-{{ i }}" hidden></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div id="duplicate-warning" class="alert alert-warning mt-3" role="status" hidden></div>
+  </section>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary btn-lg">{{ submit_label }}</button>
+    <a href="{{ url_for('main.data_view') }}" class="btn btn-secondary btn-lg">Cancel</a>
+  </div>
+</form>

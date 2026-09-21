@@ -1,101 +1,89 @@
 # TeamsheetApp
 
-A lightweight web application designed to manage, process, and display rugby match teamsheets and player appearance statistics. It provides administration capabilities for adding and editing match data, as well as public-facing views for season statistics and individual player records.
+A Flask application for recording Guildford Rugby match teamsheets and publishing player and season statistics.
 
-## Key Features
+## Features
 
-- **Data Ingestion & Match Entry**: Authorized users can add new match Teamsheets via an administrative form (`/add`). The application processes player names mapped to specific rugby positions (1-22) and includes validation logic to prevent misspelled or duplicated player names.
-- **Player Management**: Features an automated process to flag potential duplicate players (`/duplicates`) and enables admins to merge duplicate profiles into a single unified record (`/merge`), transferring all appearances accurately.
-- **Statistical Views**:
-  - **Global Stats**: Overall leaderboard of player appearances (`/stats`).
-  - **Season View**: Aggregated metrics for a specific season, including total players used, debutants, match results, and most frequent players (`/season/<season>`).
-  - **Player View**: Detailed history of a single player, displaying every match they played and their position (`/player/<name>`).
-  - **Data View**: A raw data exploration interface (`/data`).
-- **Security**: Protected routes for administration actions are wrapped with an `@admin_required` decorator, using a session-based login mechanism via a `/login` route.
+- Secure administrator workflow for adding, editing, deleting, and merging data.
+- Matchday squads of up to 23 players: positions 1–15 are starts and 16–23 are replacements.
+- Player appearance, season, score, debut, leaver, and shirt-number statistics.
+- Public match pages showing the complete teamsheet for each game.
+- Duplicate-name detection with conflict-safe player merging.
+- SQLite migrations, automated tests, linting, and gated PythonAnywhere deployment.
 
-## Tech Stack
+## Local setup
 
-- **Backend Framework**: Python / Flask
-- **Database**: SQLite (local `app.db`) via Flask-SQLAlchemy
-- **Frontend**: HTML / CSS (Jinja2 Templates)
-- **Deployment Strategy**: PythonAnywhere (using WSGI)
+Python 3.13 is required.
 
-## Local Development Setup
-
-Quick start (Windows / PowerShell / Bash):
-
-1. Create and activate a virtual environment (optional but recommended):
-
-```bash
-# Unix / macOS
-python -m venv .venv
-source .venv/bin/activate
-
-# Windows (PowerShell)
-python -m venv .venv
+```powershell
+py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Initialize the database:
-
-```bash
-flask --app app init-db
-```
-
-4. Run the app:
-
-```bash
+python -m pip install -r requirements-dev.txt
+python -m flask --app run db upgrade
 python run.py
 ```
-*(Alternatively, `python app.py` can be used).*
 
-5. Open `http://127.0.0.1:5000/` in your browser, upload teamsheet data, and view `Player Appearances`.
+On macOS or Linux, replace the activation command with `source .venv/bin/activate`. Open <http://127.0.0.1:5000> after starting the app.
 
-## Deployment to PythonAnywhere
+Development mode supplies `admin` / `password` only for local use and logs a warning. Production refuses to start without secure configuration.
 
-1.  **Pull changes**: On PythonAnywhere, navigate to your project and pull the latest changes:
-    ```bash
-    cd TeamsheetApp
-    git pull
-    ```
+## Configuration
 
-2.  **Update Dependencies**:
-    ```bash
-    source myenv/bin/activate
-    pip install -r requirements.txt
-    ```
+Set these environment variables in production:
 
-3.  **Update WSGI Configuration**:
-    Edit your WSGI configuration file (in the Web tab) to point to the new application factory.
+| Name | Purpose |
+| --- | --- |
+| `APP_ENV=production` | Enables production security checks and secure cookies. |
+| `SECRET_KEY` | Long random value used to sign sessions and CSRF tokens. |
+| `ADMIN_USER` | Administrator username. |
+| `ADMIN_PASSWORD_HASH` | Werkzeug password hash; never store the plaintext password. |
+| `DATABASE_URL` | Optional SQLAlchemy URL; defaults to `app.db`. |
+| `RATELIMIT_STORAGE_URI` | Optional shared rate-limit store; defaults to in-memory storage. |
 
-    **Old:**
-    ```python
-    from app import app as application
-    ```
+Generate a password hash locally:
 
-    **New:**
-    ```python
-    import sys
-    import os
+```powershell
+python -c "from werkzeug.security import generate_password_hash; print(generate_password_hash('replace-with-a-strong-password'))"
+```
 
-    # Add project directory to path
-    path = '/home/yourusername/TeamsheetApp'
-    if path not in sys.path:
-        sys.path.insert(0, path)
+## Database migrations
 
-    # Import the application factory
-    from app import create_app
-    application = create_app()
-    ```
+Back up `app.db` before every production migration, then run:
 
-4.  **Reload**: Reload the web app from the Web tab.
+```powershell
+python -m flask --app run db upgrade
+```
 
-Notes:
-- The database `app.db` is in the project root. If you want to keep your existing data, make sure `app.db` is preserved (it is git-ignored by default).
-- If you have trouble, check the Error Log in the Web tab.
+The initial migration can create a fresh database or upgrade the original schema. It canonicalizes seasons to `YYYY-YY`, normalizes results, removes duplicate appearances, and adds integrity constraints.
+
+## Quality checks
+
+```powershell
+python -m ruff check .
+python -m pytest
+```
+
+Tests use isolated SQLite databases and do not modify `app.db`.
+
+## PythonAnywhere deployment
+
+Use a Python 3.13 web app and virtual environment named `teamsheetapp`. Configure the production environment variables in the WSGI file before creating the application:
+
+```python
+import os
+import sys
+
+os.environ["APP_ENV"] = "production"
+os.environ["SECRET_KEY"] = "replace-with-a-long-random-value"
+os.environ["ADMIN_USER"] = "replace-with-the-admin-name"
+os.environ["ADMIN_PASSWORD_HASH"] = "replace-with-the-generated-hash"
+
+project_path = "/home/yourusername/TeamSheetApp"
+if project_path not in sys.path:
+    sys.path.insert(0, project_path)
+
+from app import create_app
+application = create_app()
+```
+
+Pushes to `main` deploy only after linting, tests, and a fresh-database migration pass. The deployment job backs up `app.db`, pulls with `--ff-only`, installs pinned dependencies, applies migrations, and reloads the PythonAnywhere WSGI file.

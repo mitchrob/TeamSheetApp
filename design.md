@@ -1,50 +1,31 @@
-# Teamsheet App Design Document
+# Teamsheet App Design
 
-## 1. Overview
-The Teamsheet App is a lightweight web application designed to manage, process, and display rugby match teamsheets and player appearance statistics. It provides administration capabilities for adding and editing match data, as well as public-facing views for season statistics and individual player records.
+## Architecture
 
-## 2. Tech Stack
-- **Backend Framework**: Python / Flask
-- **Database**: SQLite (local `app.db`) via Flask-SQLAlchemy
-- **Frontend**: HTML / CSS (Jinja2 Templates)
-- **Deployment Strategy**: PythonAnywhere (using WSGI)
+The application uses a Flask application factory, blueprints, SQLAlchemy models, and Alembic migrations. `app.py` and `run.py` are thin launchers; application behavior lives under `app/`.
 
-## 3. Data Architecture (SQLAlchemy Models)
+SQLite remains the production data store on PythonAnywhere. Schema changes are applied with `flask --app run db upgrade`, never during request startup.
 
-The system relies on three core relational models to structure the rugby data:
+## Data model
 
-- **Match**: Represents a single game.
-  - Fields: `id`, `league`, `season`, `date`, `opposition`, `location`, `result`, `guildford_points`, `opposition_points`.
-  - Relationship: One-to-many with `Appearance`.
+- `Match` stores a canonical `YYYY-YY` season, date, opposition, optional location and league, canonical result, and optional nonnegative scores.
+- `Player` stores a unique, nonblank display name.
+- `Appearance` joins one player to one match and one shirt position. Player/match and match/position pairs are unique; positions range from 1 through 23.
 
-- **Player**: Represents an individual player.
-  - Fields: `id`, `name` (unique).
-  - Relationship: One-to-many with `Appearance`.
+When both scores are present, the result is derived from the score. Missing scores are excluded from score averages. A player's debut season is determined by their earliest match date.
 
-- **Appearance**: A linking table that records a player taking part in a specific match at a specific position.
-  - Fields: `id`, `player_id`, `match_id`, `position`.
+## Routes and access
 
-## 4. Key Features & Workflows
+- Public reads: `/`, `/stats`, `/season?season=YYYY-YY`, `/player?name=...`, `/match/<id>`, and `/data`.
+- Authentication: `/login`; `/logout` accepts POST only.
+- Administrator writes: `/add`, `/edit/<id>`, `/delete/<id>`, `/duplicates`, and `/merge`.
 
-### 4.1. Data Ingestion & Match Entry
-- Authorized users can add new match Teamsheets via an administrative form (`/add`).
-- The application processes comma-separated or bulk-text input, extracting player names to specific rugby positions (1-22).
-- Includes validation logic (`find_potential_duplicates`) to prevent entering misspelled or duplicated player names (using fuzzy string matching or threshold checking).
+Write operations require an authenticated administrator session and a valid CSRF token. Production requires a session secret, administrator username, and password hash. Login attempts are rate-limited and redirect destinations are restricted to the current host.
 
-### 4.2. Player Management
-- Provides an automated process to flag and view potential duplicate players (`/admin/duplicates`).
-- Enables admins to merge duplicate profiles into a single unified record (`/admin/merge`), automatically transferring all associated `Appearance` records to the canonical player model.
+## Operations
 
-### 4.3. Statistical Views
-- **Global Stats (`/stats`)**: Overall leaderboard of player appearances.
-- **Season View (`/season/<season>`)**: Aggregated metrics for a specific season, including total players used, debutants, match results, and most frequent players.
-- **Player View (`/player/<name>`)**: Detailed history of a single player, displaying every match they played and their position.
-- **Data View (`/data`)**: A raw data exploration interface.
-
-### 4.4. Security & Authentication
-- Protected routes (adding data, editing, deleting, merging) are wrapped with an `@admin_required` decorator.
-- Session-based login mechanism via a `/login` route.
-
-## 5. Deployment & CLI Commands
-The application exposes Flask CLI commands to handle database initialization:
-- `flask init-db` - Initializes the SQLite tables.
+- Python 3.13 and exact direct dependency versions provide a reproducible runtime.
+- Pytest covers security, forms, data integrity, merges, and statistics.
+- Ruff enforces the configured code-quality rules.
+- CI runs linting, tests, and a fresh migration before deployment.
+- Deployment takes an SQLite backup before applying migrations and reloads the WSGI app only after every earlier step succeeds.

@@ -1,34 +1,56 @@
-from flask import Flask
+import logging
+
+from flask import Flask, render_template
+from flask_wtf.csrf import CSRFError
+from werkzeug.security import generate_password_hash
+
+from app.extensions import csrf, db, limiter, migrate
 from config import Config
-from app.extensions import db
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    _configure_security(app)
 
-    # Initialize Flask extensions
     db.init_app(app)
+    migrate.init_app(app, db)
+    csrf.init_app(app)
+    limiter.init_app(app)
 
-    # Register Blueprints
-    from app.routes import main, admin, auth
+    from app.routes import admin, auth, main
+
     app.register_blueprint(main.bp)
-    app.register_blueprint(admin.bp) # admin routes usually are root or /admin? Original was root.
-    app.register_blueprint(auth.bp) # login logic
+    app.register_blueprint(admin.bp)
+    app.register_blueprint(auth.bp)
 
-    # Create tables if they don't exist
-    # Note: In production we should use migrations. 
-    # For now, auto-create on start if using sqlite/dev
-    with app.app_context():
-        db.create_all()
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        return render_template("error.html", title="Request expired", message=error.description), 400
 
-    # CLI commands
-    from app.models import Match, Player, Appearance
-
-    # Re-registering the CLI commands from original app.py
-    @app.cli.command('init-db')
-    def init_db_command():
-        """Create all database tables."""
-        db.create_all()
-        print('Initialized the database.')
+    @app.after_request
+    def add_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        return response
 
     return app
+
+
+def _configure_security(app):
+    production = app.config.get("ENVIRONMENT") == "production"
+    required = ("SECRET_KEY", "ADMIN_USER", "ADMIN_PASSWORD_HASH")
+    missing = [name for name in required if not app.config.get(name)]
+    if production and missing:
+        raise RuntimeError(f"Missing required production configuration: {', '.join(missing)}")
+
+    if not app.config.get("SECRET_KEY"):
+        app.config["SECRET_KEY"] = "development-only-secret"
+    if not app.config.get("ADMIN_USER"):
+        app.config["ADMIN_USER"] = "admin"
+    if not app.config.get("ADMIN_PASSWORD_HASH"):
+        app.config["ADMIN_PASSWORD_HASH"] = generate_password_hash("password")
+        logging.getLogger(__name__).warning(
+            "Using development admin credentials; configure ADMIN_PASSWORD_HASH before deployment."
+        )

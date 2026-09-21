@@ -1,6 +1,8 @@
-from functools import wraps
-from flask import session, redirect, url_for, request
 from datetime import datetime
+from functools import wraps
+
+from flask import redirect, request, session, url_for
+
 
 def admin_required(f):
     @wraps(f)
@@ -19,6 +21,6 @@ def parse_date_safe(s):
     for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
         try:
             return datetime.strptime(s, fmt).date()
-        except Exception:
+        except ValueError:
             continue
     return None

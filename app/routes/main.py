@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from sqlalchemy import case, func
+from sqlalchemy.orm import selectinload
+
 from app.extensions import db
-from app.models import Player, Match, Appearance
-from app.services import compute_season_stats, get_player_stats, _collect_seasons
-from sqlalchemy import func, case
+from app.models import Appearance, Match, Player
+from app.services import _collect_seasons, compute_season_stats, get_player_stats
 
 bp = Blueprint('main', __name__)
 
@@ -64,11 +66,27 @@ def stats():
 
 @bp.route('/data', methods=['GET'])
 def data_view():
-    matches = Match.query.order_by(Match.date.desc()).all()
+    matches = Match.query.options(selectinload(Match.appearances)).order_by(Match.date.desc()).all()
     # Explicitly count appearances to avoid template lazy loading issues
     for m in matches:
         m.app_count = len(m.appearances)
     return render_template('data.html', matches=matches)
+
+
+@bp.route("/match/<int:match_id>", methods=["GET"])
+def match_view(match_id):
+    match = (
+        Match.query.options(selectinload(Match.appearances).joinedload(Appearance.player))
+        .filter_by(id=match_id)
+        .first_or_404()
+    )
+    lineup = {appearance.position: appearance.player for appearance in match.appearances}
+    return render_template(
+        "match.html",
+        match=match,
+        lineup=lineup,
+        squad_size=current_app.config["MAX_SQUAD_SIZE"],
+    )
 
 @bp.route('/season', methods=['GET'])
 def season_view():

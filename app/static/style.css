@@ -111,3 +111,119 @@ h1, h2, h3 {
 .display-4 {
     color: var(--primary-color);
 }
+
+.nav-button {
+    border: 0;
+    background: transparent;
+}
+
+.clickable-row:hover,
+tr[data-href]:hover {
+    cursor: pointer;
+}
+
+tr[data-href]:focus-visible,
+[data-href]:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.btn:focus-visible,
+.nav-link:focus-visible {
+    outline: 3px solid var(--secondary-color);
+    outline-offset: 2px;
+}
+
+[data-href] {
+    cursor: pointer;
+}
+
+.match-score {
+    max-width: 32rem;
+    margin-bottom: 2rem;
+}
+
+.replacement-list {
+    counter-reset: list-item 15;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+    border: 1px solid #dce1e6;
+    padding: 1.25rem;
+    border-radius: 12px;
+    background: var(--card-bg);
+    box-shadow: var(--shadow-sm);
+}
+
+.form-section h2 {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: .5rem;
+    font-size: 1.25rem;
+}
+
+.form-grid,
+.players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.player-input-group,
+.input-wrapper,
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+}
+
+.position-label {
+    width: 2rem;
+    text-align: right;
+    font-weight: 700;
+}
+
+.input-wrapper {
+    flex: 1;
+}
+
+.player-input {
+    min-width: 0;
+}
+
+.milestone-badge {
+    border-radius: 1rem;
+    padding: .2rem .5rem;
+    background: var(--secondary-color);
+    color: #111;
+    font-size: .75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.input-error {
+    border-color: var(--accent-color) !important;
+    background: #fff1f1;
+}
+
+.season-picker {
+    max-width: 200px;
+}
+
+.chart-container {
+    position: relative;
+    max-width: 300px;
+    margin: 1.25rem auto;
+}
+
+.table-narrow {
+    max-width: 500px;
+}
+
+.table-very-narrow {
+    max-width: 400px;
+}
+
+@media (max-width: 576px) {
+    body { padding-top: 62px; }
+    .form-section { padding: 1rem; }
+    .form-actions { align-items: stretch; flex-direction: column; }
+}

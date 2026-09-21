@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}{{ match.date.strftime('%d/%m/%Y') }} vs {{ match.opposition }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <p class="text-muted mb-1">{{ match.season }}{% if match.league %} · {{ match.league }}{% endif %}</p>
+    <h1 class="mb-2">Guildford vs {{ match.opposition }}</h1>
+    <p class="lead mb-0">{{ match.date.strftime('%A, %d %B %Y') }}{% if match.location %} · {{ match.location }}{% endif %}</p>
+  </div>
+  {% if session.get('admin') %}
+  <a href="{{ url_for('admin.edit_match', match_id=match.id) }}" class="btn btn-outline-primary">Edit teamsheet</a>
+  {% endif %}
+</div>
+
+<section class="match-score card" aria-labelledby="match-result-heading">
+  <div class="card-body text-center">
+    <h2 id="match-result-heading" class="h5">Result</h2>
+    <p class="display-6 mb-1">
+      {{ match.guildford_points if match.guildford_points is not none else '—' }}
+      <span aria-hidden="true">–</span>
+      {{ match.opposition_points if match.opposition_points is not none else '—' }}
+    </p>
+    <span class="badge {{ 'bg-success' if match.result == 'Win' else 'bg-danger' if match.result == 'Loss' else 'bg-warning text-dark' }}">
+      {{ match.result or 'Result unknown' }}
+    </span>
+  </div>
+</section>
+
+<h2>Teamsheet</h2>
+{% if lineup %}
+<div class="row g-4">
+  <section class="col-lg-7" aria-labelledby="starting-xv-heading">
+    <div class="card h-100">
+      <div class="card-header" id="starting-xv-heading">Starting XV</div>
+      <ol class="list-group list-group-numbered list-group-flush">
+        {% for position in range(1, 16) %}
+        <li class="list-group-item">
+          {% if lineup.get(position) %}
+          <a href="{{ url_for('main.player_view', name=lineup[position].name) }}">{{ lineup[position].name }}</a>
+          {% else %}<span class="text-muted">Not recorded</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+  <section class="col-lg-5" aria-labelledby="replacements-heading">
+    <div class="card h-100">
+      <div class="card-header" id="replacements-heading">Replacements</div>
+      <ol class="list-group list-group-numbered list-group-flush replacement-list">
+        {% for position in range(16, squad_size + 1) %}
+        <li class="list-group-item" value="{{ position }}">
+          {% if lineup.get(position) %}
+          <a href="{{ url_for('main.player_view', name=lineup[position].name) }}">{{ lineup[position].name }}</a>
+          {% else %}<span class="text-muted">Not recorded</span>{% endif %}
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </section>
+</div>
+{% else %}
+<div class="alert alert-info">No teamsheet has been recorded for this match.</div>
+{% endif %}
+
+<p class="mt-4"><a href="{{ url_for('main.data_view') }}">Back to all matches</a></p>
+{% endblock %}
