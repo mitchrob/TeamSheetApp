@@ -203,6 +203,7 @@ tr[data-href]:focus-visible,
 .status-loss { background: var(--status-loss); }
 .empty-state { background: white; border: 1px dashed #aeb8c6; border-radius: 12px; padding: 2rem; text-align: center; }
 .auth-card { max-width: 34rem; margin-inline: auto; }
+.auth-card:hover { transform: none; box-shadow: var(--shadow-sm); }
 .filter-bar { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; background: white; border: 1px solid #dce1e6; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; }
 .filter-bar > div { flex: 1 1 10rem; }
 .filter-bar label { display: block; font-size: .82rem; font-weight: 700; margin-bottom: .3rem; }

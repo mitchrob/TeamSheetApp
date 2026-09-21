@@ -95,6 +95,13 @@ def test_keyboard_player_picker_and_visual_smoke(browser, live_site, tmp_path):
     page.keyboard.press("Enter")
     assert first_position.input_value().startswith("Player")
 
+    page.goto(f"{base_url}/login")
+    login_card = page.locator(".auth-card")
+    before_hover = login_card.bounding_box()
+    login_card.hover()
+    page.wait_for_timeout(250)
+    assert login_card.bounding_box() == before_hover
+
     routes = ["/", "/data", "/stats", "/season?season=2026-27", "/match/1", "/player?name=Player%2001", "/login", "/add"]
     for index, route in enumerate(routes):
         page.goto(f"{base_url}{route}")
