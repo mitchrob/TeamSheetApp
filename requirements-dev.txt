@@ -2,4 +2,5 @@
 pytest==8.4.2
 playwright==1.55.0
 pytest-playwright==0.7.1
+beautifulsoup4==4.13.4
 ruff==0.13.2

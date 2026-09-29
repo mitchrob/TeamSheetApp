@@ -1,6 +1,7 @@
 import csv
 import io
 import secrets
+from datetime import timedelta, timezone
 
 from flask import (
     Blueprint,
@@ -24,8 +25,13 @@ from werkzeug.security import generate_password_hash
 
 from app.extensions import db
 from app.forms import validate_match_form
-from app.models import AdminUser, Appearance, AuditEvent, Match, Player
-from app.services import find_potential_duplicates
+from app.models import AdminUser, Appearance, AuditEvent, FixtureSyncRun, Match, Player, utc_now
+from app.services import (
+    SnapshotValidationError,
+    approve_initial_run,
+    find_potential_duplicates,
+    reconciliation_candidates,
+)
 from app.utils import admin_required, normalize_username
 
 bp = Blueprint("admin", __name__)
@@ -152,6 +158,19 @@ def edit_match(match_id):
         return render_template("edit.html", match=match, values=values, players=players, squad_size=squad_size)
 
     data, players, values, errors = _validate_and_prepare_form()
+    if match.source_provider:
+        data.update(
+            {
+                "league": match.league,
+                "season": match.season,
+                "date": match.date,
+                "opposition": match.opposition,
+                "location": match.location,
+                "result": match.result,
+                "guildford_points": match.guildford_points,
+                "opposition_points": match.opposition_points,
+            }
+        )
     if errors:
         for error in errors:
             flash(error, "error")
@@ -385,6 +404,79 @@ def activity():
     return render_template("activity.html", events=events)
 
 
+@bp.route("/admin/fixtures")
+@admin_required
+def fixture_sync():
+    pending_run = (
+        FixtureSyncRun.query.filter_by(status="pending_review")
+        .order_by(FixtureSyncRun.received_at.desc())
+        .first()
+    )
+    latest_run = (
+        FixtureSyncRun.query.filter_by(status="applied")
+        .order_by(FixtureSyncRun.completed_at.desc())
+        .first()
+    )
+    imported_matches = (
+        Match.query.filter_by(source_provider="rfu-page")
+        .order_by(Match.date.desc())
+        .all()
+    )
+    missing_matches = []
+    if latest_run:
+        latest_ids = {item.external_match_id for item in latest_run.items}
+        missing_matches = [
+            match
+            for match in imported_matches
+            if match.season == latest_run.season and match.external_match_id not in latest_ids
+        ]
+
+    is_stale = True
+    if latest_run and latest_run.completed_at:
+        completed_at = latest_run.completed_at
+        if completed_at.tzinfo is None:
+            completed_at = completed_at.replace(tzinfo=timezone.utc)
+        is_stale = utc_now() - completed_at > timedelta(hours=current_app.config["RFU_SYNC_STALE_HOURS"])
+
+    return render_template(
+        "fixture_sync.html",
+        pending_run=pending_run,
+        latest_run=latest_run,
+        imported_matches=imported_matches,
+        missing_matches=missing_matches,
+        candidates=reconciliation_candidates(pending_run) if pending_run else [],
+        is_stale=is_stale,
+        workflow_url=current_app.config.get("RFU_GITHUB_WORKFLOW_URL"),
+        configured=bool(current_app.config.get("RFU_SYNC_SECRET")),
+    )
+
+
+@bp.route("/admin/fixtures/<int:run_id>/approve", methods=["POST"])
+@admin_required
+def approve_fixture_sync(run_id):
+    run = db.get_or_404(FixtureSyncRun, run_id)
+    choices = {item.id: request.form.get(f"item_{item.id}", "") for item in run.items}
+    try:
+        approve_initial_run(run, choices)
+        _record_audit(
+            "approve",
+            "fixture_sync_run",
+            run.id,
+            f"Approved RFU import: {run.created_count} created and {run.updated_count} linked",
+        )
+        db.session.commit()
+    except SnapshotValidationError as exc:
+        db.session.rollback()
+        flash(str(exc), "error")
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Unable to approve RFU synchronization run %s", run_id)
+        flash("The RFU import could not be approved.", "error")
+    else:
+        flash("RFU fixtures imported successfully.", "success")
+    return redirect(url_for("admin.fixture_sync"))
+
+
 @bp.route("/admin/data-quality")
 @admin_required
 def data_quality():
@@ -403,6 +495,8 @@ def data_quality():
     rows = []
     squad_size = current_app.config["MAX_SQUAD_SIZE"]
     for match in matches:
+        if match.fixture_status in {"scheduled", "postponed", "cancelled"}:
+            continue
         issues = []
         if len(match.appearances) < squad_size:
             issues.append(f"Incomplete teamsheet ({len(match.appearances)}/{squad_size})")
@@ -450,10 +544,11 @@ def export_matches():
     rows = (
         (match.id, match.date.isoformat(), match.season, match.league or "", match.opposition,
          match.location or "", match.result or "", match.guildford_points if match.guildford_points is not None else "",
-         match.opposition_points if match.opposition_points is not None else "")
+         match.opposition_points if match.opposition_points is not None else "", match.fixture_status,
+         match.source_provider or "", match.source_url or "")
         for match in Match.query.order_by(Match.date, Match.id).all()
     )
-    return _csv_response("matches.csv", ["id", "date", "season", "league", "opposition", "location", "result", "guildford_points", "opposition_points"], rows)
+    return _csv_response("matches.csv", ["id", "date", "season", "league", "opposition", "location", "result", "guildford_points", "opposition_points", "fixture_status", "source_provider", "source_url"], rows)
 
 
 @bp.route("/admin/export/appearances.csv")

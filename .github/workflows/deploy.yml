@@ -1,4 +1,4 @@
-name: Deploy to PythonAnywhere
+name: Test application
 
 on:
   push:
@@ -32,25 +32,3 @@ jobs:
         run: |
           python -m flask --app run db upgrade
           python -m flask --app run db check
-
-  deploy:
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            cd /home/${{ secrets.SSH_USERNAME }}/TeamSheetApp
-            mkdir -p backups
-            if [ -f app.db ]; then cp app.db "backups/app.db.$(date +%Y%m%d-%H%M%S)"; fi
-            git pull --ff-only origin main
-            source /home/${{ secrets.SSH_USERNAME }}/.virtualenvs/teamsheetapp/bin/activate
-            python -m pip install -r requirements.txt
-            python -m flask --app run db upgrade
-            touch /var/www/mitchrob_eu_pythonanywhere_com_wsgi.py

@@ -12,6 +12,8 @@ from config import TestConfig
 class AppTestConfig(TestConfig):
     ADMIN_USER = "admin"
     ADMIN_PASSWORD_HASH = generate_password_hash("correct-password")
+    RFU_SYNC_SECRET = "sync-test-secret"
+    DATABASE_BACKUP_SECRET = "database-backup-test-secret-32-chars"
 
 
 @pytest.fixture

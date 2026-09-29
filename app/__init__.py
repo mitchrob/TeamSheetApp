@@ -19,11 +19,12 @@ def create_app(config_class=Config):
     csrf.init_app(app)
     limiter.init_app(app)
 
-    from app.routes import admin, auth, main
+    from app.routes import admin, auth, internal, main
 
     app.register_blueprint(main.bp)
     app.register_blueprint(admin.bp)
     app.register_blueprint(auth.bp)
+    app.register_blueprint(internal.bp)
 
     from app.cli import register_cli
     from app.models import AdminUser
@@ -75,6 +76,10 @@ def _configure_security(app):
         raise RuntimeError(f"Missing required production configuration: {', '.join(missing)}")
     if production and bool(app.config.get("ADMIN_USER")) != bool(app.config.get("ADMIN_PASSWORD_HASH")):
         raise RuntimeError("ADMIN_USER and ADMIN_PASSWORD_HASH must be configured together.")
+    if production and app.config.get("RFU_SYNC_SECRET") and len(app.config["RFU_SYNC_SECRET"]) < 32:
+        raise RuntimeError("RFU_SYNC_SECRET must contain at least 32 characters in production.")
+    if production and app.config.get("DATABASE_BACKUP_SECRET") and len(app.config["DATABASE_BACKUP_SECRET"]) < 32:
+        raise RuntimeError("DATABASE_BACKUP_SECRET must contain at least 32 characters in production.")
 
     if not production and not app.config.get("SECRET_KEY"):
         app.config["SECRET_KEY"] = "development-only-secret"

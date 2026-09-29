@@ -73,6 +73,9 @@ def compute_season_stats(season):
         .filter_by(season=season)
         .all()
     )
+    season_matches = [
+        match for match in season_matches if match.fixture_status not in {"scheduled", "postponed", "cancelled"}
+    ]
     if not season_matches:
         return None
 
@@ -114,6 +117,7 @@ def compute_season_stats(season):
         .select_from(Player)
         .join(Appearance)
         .join(Match)
+        .filter(Match.fixture_status.notin_(("scheduled", "postponed", "cancelled")))
         .order_by(Match.date.asc(), Match.id.asc())
         .all()
     )
@@ -134,6 +138,7 @@ def compute_season_stats(season):
             .join(Appearance)
             .join(Match)
             .filter(Match.season == previous_season)
+            .filter(Match.fixture_status.notin_(("scheduled", "postponed", "cancelled")))
             .distinct()
             .all()
         }
@@ -181,6 +186,7 @@ def get_player_stats(name):
         Appearance.query.options(joinedload(Appearance.match))
         .filter_by(player_id=player.id)
         .join(Match)
+        .filter(Match.fixture_status.notin_(("scheduled", "postponed", "cancelled")))
         .order_by(Match.date.desc())
         .all()
     )

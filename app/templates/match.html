@@ -6,6 +6,7 @@
     <p class="text-muted mb-1">{{ match.season }}{% if match.league %} · {{ match.league }}{% endif %}</p>
     <h1 class="mb-2">Guildford vs {{ match.opposition }}</h1>
     <p class="lead mb-0">{{ match.date.strftime('%A, %d %B %Y') }}{% if match.location %} · {{ match.location }}{% endif %}</p>
+    {% if match.source_url %}<p class="mb-0"><a href="{{ match.source_url }}" target="_blank" rel="noopener">View fixture on England Rugby</a></p>{% endif %}
   </div>
   {% if g.is_admin %}
   <a href="{{ url_for('admin.edit_match', match_id=match.id) }}" class="btn btn-outline-primary">Edit teamsheet</a>
@@ -14,15 +15,13 @@
 
 <section class="match-score score-hero" aria-labelledby="match-result-heading">
   <div class="card-body text-center">
-    <h2 id="match-result-heading" class="h5">Result</h2>
+    <h2 id="match-result-heading" class="h5">{% if match.fixture_status == 'scheduled' %}Fixture{% else %}Result{% endif %}</h2>
     <p class="display-6 mb-1">
       {{ match.guildford_points if match.guildford_points is not none else '—' }}
       <span aria-hidden="true">–</span>
       {{ match.opposition_points if match.opposition_points is not none else '—' }}
     </p>
-    <span class="status-badge status-{{ match.result|lower if match.result else 'draw' }}">
-      {{ match.result or 'Result unknown' }}
-    </span>
+    {% if match.fixture_status in ['scheduled','postponed','cancelled'] %}<span class="fixture-status fixture-status-{{ match.fixture_status }}">{{ match.fixture_status|title }}</span>{% else %}<span class="status-badge status-{{ match.result|lower if match.result else 'draw' }}">{{ match.result or 'Result unknown' }}</span>{% endif %}
   </div>
 </section>
 
@@ -61,7 +60,7 @@
   </section>
 </div>
 {% else %}
-<div class="alert alert-info">No teamsheet has been recorded for this match.</div>
+<div class="alert alert-info">{% if match.fixture_status in ['scheduled','postponed'] %}Teamsheet to be announced.{% else %}No teamsheet has been recorded for this match.{% endif %}</div>
 {% endif %}
 
 <p class="mt-4"><a href="{{ url_for('main.data_view') }}">Back to all matches</a></p>

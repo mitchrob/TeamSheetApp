@@ -27,6 +27,12 @@ class Match(db.Model):
     result = db.Column(db.String(10))
     guildford_points = db.Column(db.Integer)
     opposition_points = db.Column(db.Integer)
+    source_provider = db.Column(db.String(30), index=True)
+    external_match_id = db.Column(db.String(40))
+    source_url = db.Column(db.String(500))
+    fixture_status = db.Column(db.String(20), nullable=False, default="unknown", index=True)
+    source_updated_at = db.Column(db.DateTime(timezone=True))
+    last_synced_at = db.Column(db.DateTime(timezone=True))
     appearances = db.relationship(
         "Appearance", back_populates="match", cascade="all, delete-orphan", lazy="selectin"
     )
@@ -37,6 +43,11 @@ class Match(db.Model):
         CheckConstraint("result IN ('Win', 'Draw', 'Loss') OR result IS NULL", name="ck_match_result"),
         CheckConstraint("guildford_points >= 0 OR guildford_points IS NULL", name="ck_match_guildford_points"),
         CheckConstraint("opposition_points >= 0 OR opposition_points IS NULL", name="ck_match_opposition_points"),
+        CheckConstraint(
+            "fixture_status IN ('scheduled', 'completed', 'postponed', 'cancelled', 'unknown')",
+            name="ck_match_fixture_status",
+        ),
+        UniqueConstraint("source_provider", "external_match_id", name="uq_match_source_external_id"),
     )
 
 
@@ -86,3 +97,60 @@ class AuditEvent(db.Model):
     description = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now, index=True)
     actor = db.relationship("AdminUser", back_populates="audit_events")
+
+
+class FixtureSyncRun(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    run_id = db.Column(db.String(100), nullable=False, unique=True, index=True)
+    season = db.Column(db.String(7), nullable=False, index=True)
+    status = db.Column(db.String(30), nullable=False, index=True)
+    received_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utc_now, index=True)
+    scraped_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    completed_at = db.Column(db.DateTime(timezone=True))
+    created_count = db.Column(db.Integer, nullable=False, default=0)
+    updated_count = db.Column(db.Integer, nullable=False, default=0)
+    unchanged_count = db.Column(db.Integer, nullable=False, default=0)
+    conflict_count = db.Column(db.Integer, nullable=False, default=0)
+    missing_count = db.Column(db.Integer, nullable=False, default=0)
+    error_summary = db.Column(db.String(255))
+    items = db.relationship(
+        "FixtureImportItem", back_populates="sync_run", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending_review', 'applied', 'superseded', 'failed')",
+            name="ck_fixture_sync_run_status",
+        ),
+    )
+
+
+class FixtureImportItem(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sync_run_id = db.Column(
+        db.Integer, db.ForeignKey("fixture_sync_run.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    external_match_id = db.Column(db.String(40), nullable=False)
+    season = db.Column(db.String(7), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    league = db.Column(db.String(100))
+    opposition = db.Column(db.String(100), nullable=False)
+    location = db.Column(db.String(50), nullable=False)
+    result = db.Column(db.String(10))
+    guildford_points = db.Column(db.Integer)
+    opposition_points = db.Column(db.Integer)
+    fixture_status = db.Column(db.String(20), nullable=False)
+    source_url = db.Column(db.String(500), nullable=False)
+    proposed_action = db.Column(db.String(20), nullable=False)
+    matched_match_id = db.Column(db.Integer, db.ForeignKey("match.id", ondelete="SET NULL"))
+    issue = db.Column(db.String(255))
+    sync_run = db.relationship("FixtureSyncRun", back_populates="items")
+    matched_match = db.relationship("Match")
+
+    __table_args__ = (
+        UniqueConstraint("sync_run_id", "external_match_id", name="uq_fixture_import_item_run_external"),
+        CheckConstraint(
+            "proposed_action IN ('create', 'link', 'conflict')",
+            name="ck_fixture_import_item_action",
+        ),
+    )

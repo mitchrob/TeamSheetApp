@@ -1,3 +1,5 @@
+from datetime import date
+
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from sqlalchemy import case, func
 from sqlalchemy.orm import selectinload
@@ -10,15 +12,40 @@ bp = Blueprint('main', __name__)
 
 @bp.route('/', methods=['GET'])
 def index():
-    recent_matches = Match.query.order_by(Match.date.desc()).limit(5).all()
+    played_statuses = ("completed", "unknown")
+    recent_matches = (
+        Match.query.filter(Match.fixture_status.in_(played_statuses), Match.date <= date.today())
+        .order_by(Match.date.desc())
+        .limit(5)
+        .all()
+    )
+    upcoming_matches = (
+        Match.query.filter(Match.fixture_status.in_(("scheduled", "postponed")))
+        .order_by(Match.date.asc())
+        .limit(5)
+        .all()
+    )
+    latest_match = (
+        Match.query.filter(
+            Match.fixture_status.in_(played_statuses),
+            Match.guildford_points.isnot(None),
+            Match.opposition_points.isnot(None),
+        )
+        .order_by(Match.date.desc())
+        .first()
+    )
     total_players = Player.query.count()
     total_matches = Match.query.count()
     seasons = _collect_seasons()
-    current_season = compute_season_stats(seasons[0]) if seasons else None
+    current_season = next(
+        (stats for season in seasons if (stats := compute_season_stats(season)) is not None),
+        None,
+    )
     return render_template(
         'index.html',
         recent_matches=recent_matches,
-        latest_match=recent_matches[0] if recent_matches else None,
+        upcoming_matches=upcoming_matches,
+        latest_match=latest_match,
         current_season=current_season,
         total_players=total_players,
         total_matches=total_matches,
@@ -45,7 +72,9 @@ def stats():
         total_col,
         starts_col,
         bench_col
-    ).join(Appearance).join(Match).group_by(Player.id, Player.name)
+    ).join(Appearance).join(Match).filter(
+        Match.fixture_status.notin_(("scheduled", "postponed", "cancelled"))
+    ).group_by(Player.id, Player.name)
 
     if search_query:
         query = query.filter(Player.name.ilike(f'%{search_query}%'))
@@ -85,6 +114,7 @@ def data_view():
     opponent = request.args.get('opponent', '').strip()
     location = request.args.get('location', '').strip()
     result = request.args.get('result', '').strip()
+    status = request.args.get('status', '').strip()
     query = Match.query.options(selectinload(Match.appearances))
     if season:
         query = query.filter(Match.season == season)
@@ -94,13 +124,15 @@ def data_view():
         query = query.filter(Match.location == location)
     if result:
         query = query.filter(Match.result == result)
+    if status:
+        query = query.filter(Match.fixture_status == status)
     matches = query.order_by(Match.date.desc()).all()
     for m in matches:
         m.app_count = len(m.appearances)
     locations = [row[0] for row in db.session.query(Match.location).filter(Match.location.isnot(None)).distinct().order_by(Match.location).all() if row[0]]
     return render_template(
         'data.html', matches=matches, seasons=_collect_seasons(), locations=locations,
-        filters={'season': season, 'opponent': opponent, 'location': location, 'result': result},
+        filters={'season': season, 'opponent': opponent, 'location': location, 'result': result, 'status': status},
     )
 
 
@@ -127,7 +159,12 @@ def season_view():
         flash('No season data available', 'error')
         return redirect(url_for('main.stats'))
     
-    season = request.args.get('season') or all_seasons[0]
+    season = request.args.get('season')
+    if not season:
+        season = next(
+            (candidate for candidate in all_seasons if compute_season_stats(candidate) is not None),
+            all_seasons[0],
+        )
     stats = compute_season_stats(season)
     if stats is None:
         flash('No data for that season', 'error')

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}RFU Fixture Sync{% endblock %}
+{% block content %}
+<p class="eyebrow">Administration</p>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+  <div><h1>RFU fixture sync</h1><p>Fixtures and results are collected from the public Guildford RFU page.</p></div>
+  {% if workflow_url %}<a class="btn btn-primary" href="{{ workflow_url }}" target="_blank" rel="noopener">Run workflow on GitHub</a>{% endif %}
+</div>
+
+{% if not configured %}<div class="alert alert-warning">Synchronization is not configured. Set <code>RFU_SYNC_SECRET</code> on PythonAnywhere and in GitHub Actions.</div>{% endif %}
+{% if is_stale %}<div class="alert alert-warning">No successful RFU import has completed in the last {{ config.RFU_SYNC_STALE_HOURS }} hours.</div>{% endif %}
+
+{% if pending_run %}
+<section class="card mb-4" aria-labelledby="review-sync-heading"><div class="card-body">
+  <h2 id="review-sync-heading" class="h4">Review the first import</h2>
+  <p>Confirm whether each RFU fixture should create a match or link to an existing record. Future runs will update automatically by RFU match ID.</p>
+  <form method="post" action="{{ url_for('admin.approve_fixture_sync', run_id=pending_run.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>RFU fixture</th><th>Recommended action</th></tr></thead><tbody>
+    {% for item in pending_run.items %}<tr><td><strong>{{ item.date.strftime('%d/%m/%Y') }} vs {{ item.opposition }}</strong><br><small>{{ item.location }} · {{ item.league or 'Competition not supplied' }} · RFU {{ item.external_match_id }}</small>{% if item.issue %}<div class="text-danger">{{ item.issue }}</div>{% endif %}</td><td><label class="visually-hidden" for="item-{{ item.id }}">Action for {{ item.opposition }}</label><select class="form-select" id="item-{{ item.id }}" name="item_{{ item.id }}" required><option value="create" {% if item.proposed_action == 'create' %}selected{% endif %}>Create a new match</option>{% for match in candidates %}<option value="match:{{ match.id }}" {% if item.matched_match_id == match.id %}selected{% endif %}>Link {{ match.date.strftime('%d/%m/%Y') }} vs {{ match.opposition }} ({{ match.location or 'Unknown location' }})</option>{% endfor %}</select></td></tr>{% endfor %}
+    </tbody></table></div>
+    <button class="btn btn-primary" type="submit">Approve and import</button>
+  </form>
+</div></section>
+{% endif %}
+
+<div class="dashboard-grid">
+  <section><h2 class="h4">Imported fixtures</h2>{% if imported_matches %}<div class="match-card-list">{% for match in imported_matches %}<article class="match-card"><div class="match-card-link"><span class="match-date">{{ match.date.strftime('%d %b %Y') }}</span><strong><a href="{{ url_for('main.match_view', match_id=match.id) }}">{{ match.opposition }}</a></strong><span class="fixture-status fixture-status-{{ match.fixture_status }}">{{ match.fixture_status|replace('_', ' ')|title }}</span></div></article>{% endfor %}</div>{% else %}<div class="empty-state"><h3>No imported fixtures</h3><p>The first valid snapshot will appear here for review.</p></div>{% endif %}</section>
+  <aside>{% if latest_run %}<div class="season-snapshot"><p class="eyebrow">Last successful import</p><h2>{{ latest_run.season }}</h2><p>{{ latest_run.completed_at.strftime('%d %b %Y %H:%M') }} UTC</p><div class="snapshot-stats"><div><strong>{{ latest_run.created_count }}</strong><span>Created</span></div><div><strong>{{ latest_run.updated_count }}</strong><span>Updated</span></div><div><strong>{{ latest_run.unchanged_count }}</strong><span>Unchanged</span></div></div></div>{% endif %}{% if missing_matches %}<div class="alert alert-warning mt-3"><strong>{{ missing_matches|length }} fixture(s)</strong> were missing from the latest RFU page and were left unchanged.</div>{% endif %}</aside>
+</div>
+{% endblock %}

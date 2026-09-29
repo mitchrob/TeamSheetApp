@@ -6,7 +6,7 @@
 {% block content %}
 
 <p class="eyebrow">Match archive</p><h1>Matches</h1>
-<form method="get" class="filter-bar"><div><label for="match-season">Season</label><select class="form-select" id="match-season" name="season"><option value="">All</option>{% for season in seasons %}<option {% if filters.season == season %}selected{% endif %}>{{ season }}</option>{% endfor %}</select></div><div><label for="match-opponent">Opponent</label><input class="form-control" id="match-opponent" name="opponent" value="{{ filters.opponent }}"></div><div><label for="match-location">Location</label><select class="form-select" id="match-location" name="location"><option value="">All</option>{% for location in locations %}<option {% if filters.location == location %}selected{% endif %}>{{ location }}</option>{% endfor %}</select></div><div><label for="match-result">Result</label><select class="form-select" id="match-result" name="result"><option value="">All</option>{% for result in ['Win','Draw','Loss'] %}<option {% if filters.result == result %}selected{% endif %}>{{ result }}</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Filter</button><a class="btn btn-outline-secondary" href="{{ url_for('main.data_view') }}">Clear</a></form>
+<form method="get" class="filter-bar"><div><label for="match-season">Season</label><select class="form-select" id="match-season" name="season"><option value="">All</option>{% for season in seasons %}<option {% if filters.season == season %}selected{% endif %}>{{ season }}</option>{% endfor %}</select></div><div><label for="match-opponent">Opponent</label><input class="form-control" id="match-opponent" name="opponent" value="{{ filters.opponent }}"></div><div><label for="match-location">Location</label><select class="form-select" id="match-location" name="location"><option value="">All</option>{% for location in locations %}<option {% if filters.location == location %}selected{% endif %}>{{ location }}</option>{% endfor %}</select></div><div><label for="match-result">Result</label><select class="form-select" id="match-result" name="result"><option value="">All</option>{% for result in ['Win','Draw','Loss'] %}<option {% if filters.result == result %}selected{% endif %}>{{ result }}</option>{% endfor %}</select></div><div><label for="match-status">Status</label><select class="form-select" id="match-status" name="status"><option value="">All</option>{% for status in ['scheduled','completed','postponed','cancelled','unknown'] %}<option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Filter</button><a class="btn btn-outline-secondary" href="{{ url_for('main.data_view') }}">Clear</a></form>
 
 {% if matches %}
 <div class="table-responsive">
@@ -31,9 +31,8 @@
                 </td>
                 <td data-label="Season">{{ match.season }}</td>
                 <td data-label="Opposition">{{ match.opposition }}</td>
-                <td data-label="Result"><span class="status-badge status-{{ match.result|lower if match.result else 'draw' }}">{{ match.result or 'Unknown' }}</span></td>
-                <td data-label="Score">{{ match.guildford_points if match.guildford_points is not none else 'N/A' }} - {{
-                    match.opposition_points if match.opposition_points is not none else 'N/A' }}</td>
+                <td data-label="Result">{% if match.fixture_status in ['scheduled','postponed','cancelled'] %}<span class="fixture-status fixture-status-{{ match.fixture_status }}">{{ match.fixture_status|title }}</span>{% else %}<span class="status-badge status-{{ match.result|lower if match.result else 'draw' }}">{{ match.result or 'Unknown' }}</span>{% endif %}</td>
+                <td data-label="Score">{% if match.guildford_points is none %}Pending{% else %}{{ match.guildford_points }} - {{ match.opposition_points }}{% endif %}</td>
                 {% if g.is_admin %}<td data-label="Actions">
                     <a href="{{ url_for('admin.edit_match', match_id=match.id) }}"
                         class="btn btn-sm btn-primary">Edit</a>

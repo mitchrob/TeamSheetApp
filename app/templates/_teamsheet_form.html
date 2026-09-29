@@ -3,8 +3,13 @@
   data-lineups-url="{{ url_for('admin.recent_lineups') }}">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+  {% set imported = match is defined and match.source_provider %}
   <details class="form-section" open>
     <summary><span>Match details</span><small>Date, opposition and result</small></summary>
+    {% if imported %}
+    <div class="section-content"><div class="alert alert-info mb-3">Fixture details and scores are managed by the RFU import. You can still update every player position.{% if match.source_url %} <a href="{{ match.source_url }}" target="_blank" rel="noopener">View on England Rugby</a>.{% endif %}</div><dl class="fixture-details-grid"><div><dt>Date</dt><dd>{{ match.date.strftime('%d/%m/%Y') }}</dd></div><div><dt>Opposition</dt><dd>{{ match.opposition }}</dd></div><div><dt>Competition</dt><dd>{{ match.league or 'Not supplied' }}</dd></div><div><dt>Location</dt><dd>{{ match.location }}</dd></div><div><dt>Status</dt><dd>{{ match.fixture_status|title }}</dd></div><div><dt>Score</dt><dd>{{ match.guildford_points if match.guildford_points is not none else '—' }}–{{ match.opposition_points if match.opposition_points is not none else '—' }}</dd></div></dl></div>
+    <input type="hidden" name="league" value="{{ values.league }}"><input type="hidden" name="season" value="{{ values.season }}"><input type="hidden" name="date" value="{{ values.date }}"><input type="hidden" name="opposition" value="{{ values.opposition }}"><input type="hidden" name="location" value="{{ values.location }}"><input type="hidden" name="result" value="{{ values.result }}"><input type="hidden" name="guildford_points" value="{{ values.guildford_points }}"><input type="hidden" name="opposition_points" value="{{ values.opposition_points }}">
+    {% else %}
     <div class="form-grid section-content">
       <div><label class="form-label" for="league">League</label><input class="form-control" id="league" name="league" maxlength="100" value="{{ values.league }}"></div>
       <div><label class="form-label" for="season">Season</label><input class="form-control" id="season" name="season" required pattern="\d{4}-\d{2}" placeholder="2026-27" value="{{ values.season }}"></div>
@@ -15,6 +20,7 @@
       <div><label class="form-label" for="guildford_points">Guildford points</label><input class="form-control" type="number" min="0" max="999" id="guildford_points" name="guildford_points" value="{{ values.guildford_points }}"></div>
       <div><label class="form-label" for="opposition_points">Opposition points</label><input class="form-control" type="number" min="0" max="999" id="opposition_points" name="opposition_points" value="{{ values.opposition_points }}"></div>
     </div>
+    {% endif %}
   </details>
 
   <section class="copy-lineup-panel" aria-labelledby="copy-lineup-heading">

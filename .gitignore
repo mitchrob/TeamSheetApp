@@ -14,3 +14,5 @@ migration-test.db
 backups/
 rfu_sample.html
 rfu_sample_files/
+diagnostics/
+tmp-pytest-*/

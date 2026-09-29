@@ -2,7 +2,7 @@
 {% block title %}Edit Teamsheet{% endblock %}
 {% block content %}
 <h1>Edit Teamsheet</h1>
-<p>Update the match details and teamsheet below.</p>
+<p>{% if match.source_provider %}Update the teamsheet below. Match details are synchronized from the RFU.{% else %}Update the match details and teamsheet below.{% endif %}</p>
 {% set form_action = url_for('admin.edit_match', match_id=match.id) %}
 {% set submit_label = 'Update teamsheet' %}
 {% include '_teamsheet_form.html' %}
