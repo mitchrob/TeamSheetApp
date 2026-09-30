@@ -1,6 +1,9 @@
 # Python virtual environment
 .venv/
 
+# Local agent tooling (not part of the application)
+.agent/
+
 # SQLite database
 app.db
 app.db.backup*
