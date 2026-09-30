@@ -83,7 +83,6 @@ def compute_season_stats(season):
     wins = draws = losses = 0
     points_for = points_against = scored_matches = 0
     player_counts = {}
-    shirt_counter = Counter()
 
     for match in season_matches:
         result = normalize_result(match.result, match.guildford_points, match.opposition_points)
@@ -104,7 +103,6 @@ def compute_season_stats(season):
             entry = player_counts.setdefault(name, {"starts": 0, "bench": 0, "total": 0})
             entry["starts" if appearance.position <= 15 else "bench"] += 1
             entry["total"] += 1
-            shirt_counter[appearance.position] += 1
 
     leaderboard = sorted(
         player_counts.items(), key=lambda item: (-item[1]["total"], -item[1]["starts"], item[0].casefold())
@@ -145,12 +143,6 @@ def compute_season_stats(season):
         leavers = sorted(previous_players - set(player_counts), key=str.casefold)
         leavers_pct = (len(leavers) / len(previous_players) * 100.0) if previous_players else 0.0
 
-    total_appearances = sum(shirt_counter.values())
-    shirt_dist = [
-        {"num": number, "count": count, "pct": count / total_appearances * 100.0}
-        for number, count in sorted(shirt_counter.items())
-    ]
-
     return {
         "season": season,
         "total_matches": total_matches,
@@ -163,7 +155,6 @@ def compute_season_stats(season):
         "avg_points_for": round(points_for / scored_matches) if scored_matches else 0,
         "avg_points_against": round(points_against / scored_matches) if scored_matches else 0,
         "leaderboard": leaderboard,
-        "shirt_dist": shirt_dist,
         "total_players_used": total_players_used,
         "debut_count": debut_count,
         "debut_pct": debut_pct,
@@ -194,6 +185,7 @@ def get_player_stats(name):
         return None
 
     total = len(appearances)
+    seasons_played = len({appearance.match.season for appearance in appearances})
     starts = sum(1 for appearance in appearances if appearance.position <= 15)
     wins = sum(
         1
@@ -214,6 +206,7 @@ def get_player_stats(name):
         "starts": starts,
         "bench": total - starts,
         "total": total,
+        "seasons_played": seasons_played,
         "win_pct": wins / total * 100.0,
         "by_shirt": [
             {"num": number, "count": count, "pct": count / total * 100.0}

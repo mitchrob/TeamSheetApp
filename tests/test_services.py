@@ -1,6 +1,12 @@
 from datetime import date
 
-from app.services import _collect_seasons, canonicalize_season, compute_season_stats, normalize_result
+from app.services import (
+    _collect_seasons,
+    canonicalize_season,
+    compute_season_stats,
+    get_player_stats,
+    normalize_result,
+)
 
 
 def test_season_and_result_normalization():
@@ -41,3 +47,13 @@ def test_missing_scores_are_excluded_from_averages(app, match_factory):
     assert stats["scored_matches"] == 1
     assert stats["avg_points_for"] == 20
     assert stats["avg_points_against"] == 10
+
+
+def test_player_stats_count_distinct_seasons(app, match_factory, appearance_factory):
+    first = match_factory(season="2024-25", match_date=date(2025, 1, 1), opposition="First")
+    second = match_factory(season="2025-26", match_date=date(2025, 9, 1), opposition="Second")
+    third = match_factory(season="2025-26", match_date=date(2025, 9, 8), opposition="Third")
+    for match in (first, second, third):
+        appearance_factory(match, "Multi Season Player")
+
+    assert get_player_stats("Multi Season Player")["seasons_played"] == 2

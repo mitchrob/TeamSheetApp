@@ -96,29 +96,6 @@
   </div>
 </div>
 
-<h2>Shirt Number Distribution</h2>
-<div class="table-responsive">
-  <table class="table table-sm table-very-narrow">
-    <caption class="visually-hidden">Shirt number distribution for {{ stats.season }}</caption>
-    <thead>
-      <tr>
-        <th>Shirt #</th>
-        <th>Count</th>
-        <th>%</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in stats.shirt_dist %}
-      <tr>
-        <td>{{ item.num }}</td>
-        <td>{{ item.count }}</td>
-        <td>{{ '%.1f' % item.pct }}%</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
 <h2>Matches</h2>
 <div class="table-responsive">
   <table class="table table-striped table-hover responsive-table">
