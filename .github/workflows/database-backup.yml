@@ -39,11 +39,29 @@ jobs:
           -out backup/teamsheet.db.enc
           -pass env:DATABASE_BACKUP_ENCRYPTION_PASSPHRASE
       - name: Upload to Backblaze B2
+        id: upload
         run: |
           object_name="teamsheet/$(date -u +%Y/%m)/teamsheet-$(date -u +%Y%m%d-%H%M%S).db.enc"
           aws s3 cp backup/teamsheet.db.enc "s3://${B2_BUCKET}/${object_name}" \
             --endpoint-url "${B2_ENDPOINT}" \
             --only-show-errors
+          echo "object_name=${object_name}" >> "${GITHUB_OUTPUT}"
+      - name: Download and verify stored backup
+        env:
+          B2_OBJECT_NAME: ${{ steps.upload.outputs.object_name }}
+        run: |
+          aws s3 cp "s3://${B2_BUCKET}/${B2_OBJECT_NAME}" backup/stored.db.enc \
+            --endpoint-url "${B2_ENDPOINT}" \
+            --only-show-errors
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in backup/stored.db.enc \
+            -out backup/restored.db \
+            -pass env:DATABASE_BACKUP_ENCRYPTION_PASSPHRASE
+          python scripts/verify_database_backup.py backup/restored.db --matches backup/teamsheet.db
       - name: Remove runner copies
         if: always()
-        run: python -c "from pathlib import Path; [p.unlink(missing_ok=True) for p in (Path('backup/teamsheet.db'), Path('backup/teamsheet.db.enc'))]"
+        run: >-
+          python -c "from pathlib import Path;
+          [p.unlink(missing_ok=True) for p in
+          (Path('backup/teamsheet.db'), Path('backup/teamsheet.db.enc'),
+          Path('backup/stored.db.enc'), Path('backup/restored.db'))]"

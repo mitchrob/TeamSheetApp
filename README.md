@@ -95,7 +95,7 @@ python -m app.rfu_scraper --dry-run --season 2026-2027
 
 ## Production database backups
 
-The `Back up production database` GitHub Actions workflow securely downloads a consistent SQLite snapshot from PythonAnywhere, verifies its checksum and SQLite integrity, encrypts it, and uploads only the encrypted file to a private Backblaze B2 bucket. PythonAnywhere does not need outbound internet access, and the unencrypted database is removed from the temporary GitHub runner after every run.
+The `Back up production database` GitHub Actions workflow securely downloads a consistent SQLite snapshot from PythonAnywhere, verifies its checksum and SQLite integrity, encrypts it, and uploads only the encrypted file to a private Backblaze B2 bucket. It then downloads the stored object, decrypts it, compares it with the original snapshot, and runs another SQLite integrity check. PythonAnywhere does not need outbound internet access, and all temporary database files are removed from the GitHub runner after every run.
 
 Create a private B2 bucket with a lifecycle rule for the desired retention period and a standard application key restricted to that bucket. Do not use the Backblaze master key. Configure these GitHub repository settings:
 
