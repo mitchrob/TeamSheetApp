@@ -122,7 +122,11 @@ def compute_season_stats(season):
     for name, first_season in first_appearances:
         first_appearance_season.setdefault(name, first_season)
 
-    debut_count = sum(1 for name in player_counts if first_appearance_season.get(name) == season)
+    debutants = sorted(
+        (name for name in player_counts if first_appearance_season.get(name) == season),
+        key=str.casefold,
+    )
+    debut_count = len(debutants)
     debut_pct = (debut_count / total_players_used * 100.0) if total_players_used else 0.0
 
     all_seasons = _collect_seasons()
@@ -156,6 +160,7 @@ def compute_season_stats(season):
         "avg_points_against": round(points_against / scored_matches) if scored_matches else 0,
         "leaderboard": leaderboard,
         "total_players_used": total_players_used,
+        "debutants": debutants,
         "debut_count": debut_count,
         "debut_pct": debut_pct,
         "leavers": leavers,

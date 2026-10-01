@@ -61,6 +61,13 @@
 <h2>Players Used</h2>
 <p><strong>Total players used:</strong> {{ stats.total_players_used }}</p>
 <p><strong>Debuts:</strong> {{ stats.debut_count }} ({{ '%.1f' % stats.debut_pct }}%)</p>
+{% if stats.debutants %}
+<p><em>Debutants list:</em>
+  {% for name in stats.debutants %}
+  <a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
+  {% endfor %}
+</p>
+{% endif %}
 <p><strong>Previous season:</strong> {{ stats.previous_season or 'N/A' }}</p>
 <p><strong>Leavers:</strong> {{ stats.leavers_count }} ({{ '%.1f' % stats.leavers_pct }}%)</p>
 {% if stats.leavers_count > 0 %}

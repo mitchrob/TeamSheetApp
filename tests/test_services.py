@@ -30,8 +30,12 @@ def test_debut_uses_earliest_match_date(app, match_factory, appearance_factory):
     earlier = match_factory(season="2024-25", match_date=date(2020, 9, 1), opposition="Earlier")
     appearance_factory(later, "Date Ordered Player")
     appearance_factory(earlier, "Date Ordered Player")
-    assert compute_season_stats("2024-25")["debut_count"] == 1
-    assert compute_season_stats("2023-24")["debut_count"] == 0
+    earlier_stats = compute_season_stats("2024-25")
+    later_stats = compute_season_stats("2023-24")
+    assert earlier_stats["debut_count"] == 1
+    assert earlier_stats["debutants"] == ["Date Ordered Player"]
+    assert later_stats["debut_count"] == 0
+    assert later_stats["debutants"] == []
 
 
 def test_missing_scores_are_excluded_from_averages(app, match_factory):

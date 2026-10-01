@@ -1,3 +1,6 @@
+from datetime import date
+
+
 def test_public_match_page_shows_teamsheet(client, match_factory, appearance_factory):
     match = match_factory(opposition="Old Rivals")
     appearance_factory(match, "Starting Player", position=1)
@@ -45,3 +48,20 @@ def test_season_summary_omits_shirt_distribution(client, match_factory, appearan
     assert response.status_code == 200
     assert b"Player Leaderboard" in response.data
     assert b"Shirt Number Distribution" not in response.data
+
+
+def test_season_summary_lists_debutants(client, match_factory, appearance_factory):
+    previous = match_factory(season="2024-25", match_date=date(2024, 9, 1), opposition="Previous")
+    current = match_factory(season="2025-26", match_date=date(2025, 9, 1), opposition="Current")
+    appearance_factory(previous, "Established Player")
+    appearance_factory(current, "Established Player")
+    appearance_factory(current, "Zoe Debutant", position=2)
+    appearance_factory(current, "Amy Debutant", position=3)
+
+    response = client.get("/season?season=2025-26")
+
+    assert response.status_code == 200
+    assert b"Debutants list:" in response.data
+    assert response.data.index(b"Amy Debutant") < response.data.index(b"Zoe Debutant")
+    assert b"Established Player</a>," not in response.data.split(b"Debutants list:", 1)[1].split(b"</p>", 1)[0]
+    assert b"/player?name=Amy%20Debutant" in response.data
