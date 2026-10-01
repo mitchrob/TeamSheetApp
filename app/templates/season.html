@@ -71,7 +71,11 @@
 <p><strong>Previous season:</strong> {{ stats.previous_season or 'N/A' }}</p>
 <p><strong>Leavers:</strong> {{ stats.leavers_count }} ({{ '%.1f' % stats.leavers_pct }}%)</p>
 {% if stats.leavers_count > 0 %}
-<p><em>Leavers list:</em> {{ stats.leavers|join(', ') }}</p>
+<p><em>Leavers list:</em>
+  {% for name in stats.leavers %}
+  <a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
+  {% endfor %}
+</p>
 {% endif %}
 
 <h2>Player Leaderboard</h2>

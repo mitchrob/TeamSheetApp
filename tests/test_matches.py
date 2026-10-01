@@ -65,3 +65,17 @@ def test_season_summary_lists_debutants(client, match_factory, appearance_factor
     assert response.data.index(b"Amy Debutant") < response.data.index(b"Zoe Debutant")
     assert b"Established Player</a>," not in response.data.split(b"Debutants list:", 1)[1].split(b"</p>", 1)[0]
     assert b"/player?name=Amy%20Debutant" in response.data
+
+
+def test_season_summary_links_leavers_to_player_profiles(client, match_factory, appearance_factory):
+    previous = match_factory(season="2024-25", match_date=date(2024, 9, 1), opposition="Previous")
+    current = match_factory(season="2025-26", match_date=date(2025, 9, 1), opposition="Current")
+    appearance_factory(previous, "Former Player")
+    appearance_factory(current, "Current Player")
+
+    response = client.get("/season?season=2025-26")
+
+    assert response.status_code == 200
+    leavers = response.data.split(b"Leavers list:", 1)[1].split(b"</p>", 1)[0]
+    assert b"/player?name=Former%20Player" in leavers
+    assert b">Former Player</a>" in leavers
