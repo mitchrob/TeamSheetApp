@@ -8,10 +8,12 @@
     integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=7">
+  <link rel="stylesheet" href="{{ url_for('static', filename='clubhouse.css') }}?v=1">
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" aria-label="Primary navigation">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <nav class="navbar navbar-expand-lg navbar-dark clubhouse-nav" aria-label="Primary navigation">
     <div class="container-fluid">
       <a class="navbar-brand" href="{{ url_for('main.index') }}">Guildford Rugby</a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -20,10 +22,14 @@
       </button>
       <div class="collapse navbar-collapse" id="mainNav">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.data_view') }}">Matches</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.stats') }}">Players</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('main.season_view') }}">Seasons</a></li>
+          {% for endpoint, label, icon, active in [
+            ('main.index', 'Home', 'house-door', request.endpoint == 'main.index'),
+            ('main.data_view', 'Matches', 'calendar3', request.endpoint in ['main.data_view', 'main.match_view']),
+            ('main.stats', 'Players', 'people', request.endpoint in ['main.stats', 'main.player_view']),
+            ('main.season_view', 'Seasons', 'bar-chart', request.endpoint == 'main.season_view')
+          ] %}
+          <li class="nav-item"><a class="nav-link{% if active %} active{% endif %}" {% if active %}aria-current="page"{% endif %} href="{{ url_for(endpoint) }}"><i class="bi bi-{{ icon }}" aria-hidden="true"></i>{{ label }}</a></li>
+          {% endfor %}
           {% if g.is_admin %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.add') }}">Add Teamsheet</a></li>
           <li class="nav-item dropdown">
@@ -48,14 +54,14 @@
             </form>
           </li>
           {% else %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Admin Login</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}"><i class="bi bi-gear" aria-hidden="true"></i>Admin Login</a></li>
           {% endif %}
         </ul>
       </div>
     </div>
   </nav>
 
-  <main class="container mt-4" id="main-content">
+  <main class="container clubhouse-main" id="main-content" tabindex="-1">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, msg in messages %}
       <div class="alert alert-{{ 'danger' if category == 'error' else ('success' if category == 'success' else 'info') }} alert-dismissible fade show"

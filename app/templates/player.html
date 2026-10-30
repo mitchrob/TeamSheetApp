@@ -1,56 +1,10 @@
 {% extends 'base.html' %}
 {% block title %}Player - {{ stats.name }}{% endblock %}
 {% block content %}
-<h1>{{ stats.name }}</h1>
-<p>
-  <strong>1st appearance:</strong>
-  {% if stats.first_date %}{{ stats.first_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
-  &nbsp;|&nbsp;
-  <strong>Most recent:</strong>
-  {% if stats.last_date %}{{ stats.last_date.strftime('%d/%m/%Y') }}{% else %}Unknown{% endif %}
-</p>
-<p>
-  <strong>Starts:</strong> {{ stats.starts }} &nbsp;|&nbsp;
-  <strong>Bench:</strong> {{ stats.bench }} &nbsp;|&nbsp;
-  <strong>Total:</strong> {{ stats.total }} &nbsp;|&nbsp;
-  <strong>Seasons played:</strong> {{ stats.seasons_played }} &nbsp;|&nbsp;
-  <strong>Win %:</strong> {{ '%.1f' % stats.win_pct }}%
-</p>
-
-<h2>Shirt number distribution</h2>
-{% if stats.by_shirt %}
-<div class="table-responsive">
-  <table class="table table-sm table-very-narrow">
-    <caption class="visually-hidden">Shirt number distribution for {{ stats.name }}</caption>
-    <thead>
-      <tr>
-        <th>Shirt</th>
-        <th>Appearances</th>
-        <th>% of total</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for s in stats.by_shirt %}
-      <tr>
-        <td>
-          {% if s.num > 15 %}
-          {{ s.num }} (bench)
-          {% else %}
-          {{ s.num }}
-          {% endif %}
-        </td>
-        <td>{{ s.count }}</td>
-        <td>{{ '%.1f' % s.pct }}%</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% else %}
-<p>No shirt-number data available.</p>
-{% endif %}
-
-<h2>All teamsheets containing {{ stats.name }}</h2>
+<p class="mb-4"><a href="{{ url_for('main.stats') }}">← Back to players</a></p>
+<header class="page-header"><div class="profile-heading"><span class="player-monogram" aria-hidden="true">{{ stats.name[:1] }}</span><div><h1>{{ stats.name }}</h1><div class="profile-dates"><span><strong>1st appearance:</strong> {{ stats.first_date.strftime('%d/%m/%Y') if stats.first_date else 'Unknown' }}</span><span><strong>Most recent:</strong> {{ stats.last_date.strftime('%d/%m/%Y') if stats.last_date else 'Unknown' }}</span></div></div></div></header>
+<dl class="metric-strip panel">{% for label, value in [('Appearances',stats.total),('Starts',stats.starts),('Bench',stats.bench),('Seasons played',stats.seasons_played),('Win rate','%.1f%%' % stats.win_pct)] %}<div class="metric"><dt><strong>{{ label }}:</strong></dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+<div class="clubhouse-grid"><section class="panel"><h2>Appearance history</h2><p class="panel-subtitle mb-3">All teamsheets containing {{ stats.name }}.</p>
 <div class="table-responsive">
   <table class="table table-hover responsive-table">
     <caption class="visually-hidden">All appearances by {{ stats.name }}</caption>
@@ -72,7 +26,7 @@
         <td data-label="Season">{{ a.match.season }}</td>
         <td data-label="Opposition">{{ a.match.opposition }}</td>
         <td data-label="Location">{{ a.match.location }}</td>
-        <td data-label="Result">{{ a.match.result }}</td>
+        <td data-label="Result"><span class="status-badge status-{{ a.match.result|lower if a.match.result else 'draw' }}">{{ a.match.result or 'Unknown' }}</span></td>
         <td data-label="Score">{{ a.match.guildford_points if a.match.guildford_points is not none else 'N/A' }} - {{
           a.match.opposition_points if a.match.opposition_points is not none else 'N/A' }}</td>
         <td data-label="Position">
@@ -87,5 +41,6 @@
   </table>
 </div>
 
-<p><a href="{{ url_for('main.stats') }}">Back to stats</a> • <a href="{{ url_for('main.data_view') }}">View data</a></p>
+
+</section><aside class="panel"><h2>Shirt number distribution</h2>{% if stats.by_shirt %}<div class="shirt-bars">{% for s in stats.by_shirt %}<div><div class="shirt-bar-label"><span>Shirt {{ s.num }}{% if s.num > 15 %} (bench){% endif %}</span><strong>{{ s.count }} ({{ '%.1f' % s.pct }}%)</strong></div><div class="shirt-bar" aria-hidden="true"><span style="width: {{ s.pct }}%"></span></div></div>{% endfor %}</div>{% else %}<p>No shirt-number data available.</p>{% endif %}</aside></div>
 {% endblock %}

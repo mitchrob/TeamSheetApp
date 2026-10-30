@@ -5,7 +5,7 @@
 {% endblock %}
 {% block content %}
 
-<p class="eyebrow">Match archive</p><h1>Matches</h1>
+<header class="page-header"><div><h1>Matches</h1><p>Fixtures, results and teamsheets.</p></div></header>
 <form method="get" class="filter-bar"><div><label for="match-season">Season</label><select class="form-select" id="match-season" name="season"><option value="">All</option>{% for season in seasons %}<option {% if filters.season == season %}selected{% endif %}>{{ season }}</option>{% endfor %}</select></div><div><label for="match-opponent">Opponent</label><input class="form-control" id="match-opponent" name="opponent" value="{{ filters.opponent }}"></div><div><label for="match-location">Location</label><select class="form-select" id="match-location" name="location"><option value="">All</option>{% for location in locations %}<option {% if filters.location == location %}selected{% endif %}>{{ location }}</option>{% endfor %}</select></div><div><label for="match-result">Result</label><select class="form-select" id="match-result" name="result"><option value="">All</option>{% for result in ['Win','Draw','Loss'] %}<option {% if filters.result == result %}selected{% endif %}>{{ result }}</option>{% endfor %}</select></div><div><label for="match-status">Status</label><select class="form-select" id="match-status" name="status"><option value="">All</option>{% for status in ['scheduled','completed','postponed','cancelled','unknown'] %}<option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></div><button class="btn btn-primary" type="submit">Filter</button><a class="btn btn-outline-secondary" href="{{ url_for('main.data_view') }}">Clear</a></form>
 
 {% if matches %}
@@ -17,6 +17,7 @@
                 <th>Date</th>
                 <th>Season</th>
                 <th>Opposition</th>
+                <th>Location</th>
                 <th>Result</th>
                 <th>Score</th>
                 {% if g.is_admin %}<th>Actions</th>{% endif %}
@@ -31,6 +32,7 @@
                 </td>
                 <td data-label="Season">{{ match.season }}</td>
                 <td data-label="Opposition">{{ match.opposition }}</td>
+                <td data-label="Location">{{ match.location or 'Unknown' }}</td>
                 <td data-label="Result">{% if match.fixture_status in ['scheduled','postponed','cancelled'] %}<span class="fixture-status fixture-status-{{ match.fixture_status }}">{{ match.fixture_status|title }}</span>{% else %}<span class="status-badge status-{{ match.result|lower if match.result else 'draw' }}">{{ match.result or 'Unknown' }}</span>{% endif %}</td>
                 <td data-label="Score">{% if match.guildford_points is none %}Pending{% else %}{{ match.guildford_points }} - {{ match.opposition_points }}{% endif %}</td>
                 {% if g.is_admin %}<td data-label="Actions">

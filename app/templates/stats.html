@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block title %}Appearances{% endblock %}
 {% block content %}
-<p class="eyebrow">Player archive</p><h1>Players</h1>
+<header class="page-header"><div><h1>Players</h1><p>Explore player appearances and club history.</p></div></header>
 
 <form method="GET" action="{{ url_for('main.stats') }}" class="filter-bar">
   <div class="form-group">

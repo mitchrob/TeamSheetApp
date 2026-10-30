@@ -1,141 +1,19 @@
 {% extends 'base.html' %}
 {% block title %}Season Statistics - {{ stats.season }}{% endblock %}
 {% block content %}
-<h1>Season Statistics — {{ stats.season }}</h1>
-
-<form method="get" action="{{ url_for('main.season_view') }}">
-  <label for="season" class="form-label">Select Season:</label>
-  <select name="season" id="season" class="form-select season-picker">
-    {% for s in stats.available_seasons %}
-    <option value="{{ s }}" {% if s==stats.season %}selected{% endif %}>{{ s }}</option>
-    {% endfor %}
-  </select>
-</form>
-
-<h2>Summary</h2>
-<div class="chart-container">
-  <canvas id="winLossChart" data-outcomes='{{ [stats.wins, stats.losses, stats.draws] | tojson }}' aria-label="Match outcome chart"></canvas>
-</div>
-<div class="table-responsive">
-  <table class="table table-sm table-narrow">
-    <caption class="visually-hidden">Season summary</caption>
-    <tr>
-      <th>Total matches</th>
-      <td>{{ stats.total_matches }}</td>
-    </tr>
-    <tr>
-      <th>Wins</th>
-      <td>{{ stats.wins }}</td>
-    </tr>
-    <tr>
-      <th>Draws</th>
-      <td>{{ stats.draws }}</td>
-    </tr>
-    <tr>
-      <th>Losses</th>
-      <td>{{ stats.losses }}</td>
-    </tr>
-    <tr>
-      <th>Win %</th>
-      <td>{{ '%.1f' % stats.win_pct }}%</td>
-    </tr>
-    <tr>
-      <th>Points For</th>
-      <td>{{ stats.points_for }}</td>
-    </tr>
-    <tr>
-      <th>Points Against</th>
-      <td>{{ stats.points_against }}</td>
-    </tr>
-    <tr>
-      <th>Avg Points For</th>
-      <td>{{ stats.avg_points_for }}</td>
-    </tr>
-    <tr>
-      <th>Avg Points Against</th>
-      <td>{{ stats.avg_points_against }}</td>
-    </tr>
-  </table>
-</div>
-
-<h2>Players Used</h2>
-<p><strong>Total players used:</strong> {{ stats.total_players_used }}</p>
-<p><strong>Debuts:</strong> {{ stats.debut_count }} ({{ '%.1f' % stats.debut_pct }}%)</p>
-{% if stats.debutants %}
-<p><em>Debutants list:</em>
-  {% for name in stats.debutants %}
-  <a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
-  {% endfor %}
-</p>
-{% endif %}
-<p><strong>Previous season:</strong> {{ stats.previous_season or 'N/A' }}</p>
-<p><strong>Leavers:</strong> {{ stats.leavers_count }} ({{ '%.1f' % stats.leavers_pct }}%)</p>
-{% if stats.leavers_count > 0 %}
-<p><em>Leavers list:</em>
-  {% for name in stats.leavers %}
-  <a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a>{% if not loop.last %}, {% endif %}
-  {% endfor %}
-</p>
-{% endif %}
-
-<h2>Player Leaderboard</h2>
-<div id="player-leaderboard">
-  <input class="search form-control" placeholder="Search" />
-  <br>
-  <div class="table-responsive">
-    <table class="table table-striped table-hover responsive-table">
-      <caption class="visually-hidden">Player leaderboard for {{ stats.season }}</caption>
-      <thead>
-        <tr>
-          <th class="sort" data-sort="player">Player</th>
-          <th class="sort" data-sort="starts">Starts</th>
-          <th class="sort" data-sort="bench">Bench</th>
-          <th class="sort" data-sort="total">Total</th>
-        </tr>
-      </thead>
-      <tbody class="list">
-        {% for name, counts in stats.leaderboard %}
-        <tr>
-          <td data-label="Player" class="player"><a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a></td>
-          <td data-label="Starts" class="starts">{{ counts.starts }}</td>
-          <td data-label="Bench" class="bench">{{ counts.bench }}</td>
-          <td data-label="Total" class="total">{{ counts.total }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<h2>Matches</h2>
-<div class="table-responsive">
-  <table class="table table-striped table-hover responsive-table">
-    <caption class="visually-hidden">Matches in {{ stats.season }}</caption>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Opposition</th>
-        <th>Location</th>
-        <th>Result</th>
-        <th>GF</th>
-        <th>GA</th>
-      </tr>
-    </thead>
-    <tbody class="clickable-rows">
-      {% for m in stats.match_list %}
-      <tr data-href="{{ url_for('main.match_view', match_id=m.id) }}">
-        <td data-label="Date">{{ m.date.strftime('%d/%m/%Y') }}</td><td data-label="Opposition">{{ m.opposition }}</td><td data-label="Location">{{ m.location }}</td><td data-label="Result">{{ m.result }}</td><td data-label="GF">{{ m.guildford_points if m.guildford_points is not none else 'N/A' }}</td><td data-label="GA">{{ m.opposition_points if m.opposition_points is not none else 'N/A' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
+<header class="page-header"><div><h1>Season overview</h1><p>Key figures and player information for {{ stats.season }}.</p></div><form method="get" action="{{ url_for('main.season_view') }}"><label for="season" class="visually-hidden">Select Season:</label><select name="season" id="season" class="form-select season-picker">{% for s in stats.available_seasons %}<option value="{{ s }}" {% if s==stats.season %}selected{% endif %}>{{ s }}</option>{% endfor %}</select><noscript><button class="btn btn-primary mt-2">View season</button></noscript></form></header>
+<dl class="metric-strip" aria-label="Season summary">{% for label, value in [('Matches',stats.total_matches),('Wins',stats.wins),('Draws',stats.draws),('Losses',stats.losses),('Win rate','%.1f%%' % stats.win_pct),('Points for',stats.points_for),('Points against',stats.points_against),('Players',stats.total_players_used)] %}<div class="metric"><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+<section class="panel"><h2>Match results</h2><div class="outcome-bar" aria-hidden="true"><span class="outcome-win" style="width: {{ stats.wins / stats.total_matches * 100 }}%"></span><span class="outcome-draw" style="width: {{ stats.draws / stats.total_matches * 100 }}%"></span><span class="outcome-loss" style="width: {{ stats.losses / stats.total_matches * 100 }}%"></span></div><div class="outcome-labels"><span>{{ stats.wins }} Wins ({{ '%.1f' % stats.win_pct }}%)</span><span>{{ stats.draws }} Draws</span><span>{{ stats.losses }} Losses</span></div><p class="panel-subtitle mt-3"><small>Average points for: {{ stats.avg_points_for }} · Against: {{ stats.avg_points_against }} · Based on {{ stats.scored_matches }} matches with scores.</small></p></section>
+<div class="clubhouse-grid">
+<section class="panel" id="player-leaderboard"><h2>Player Leaderboard</h2><p class="panel-subtitle mb-3">Appearances in {{ stats.season }}.</p><label for="leaderboard-search" class="visually-hidden">Search season players</label><input id="leaderboard-search" class="search form-control mb-3" placeholder="Search players" type="search"><div class="table-responsive"><table class="table table-hover responsive-table"><caption class="visually-hidden">Player leaderboard for {{ stats.season }}</caption><thead><tr><th class="sort" data-sort="player">Player</th><th class="sort" data-sort="starts">Starts</th><th class="sort" data-sort="bench">Bench</th><th class="sort" data-sort="total">Total</th></tr></thead><tbody class="list">{% for name, counts in stats.leaderboard %}<tr><td data-label="Player" class="player"><a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a></td><td data-label="Starts" class="starts">{{ counts.starts }}</td><td data-label="Bench" class="bench">{{ counts.bench }}</td><td data-label="Total" class="total"><strong>{{ counts.total }}</strong></td></tr>{% endfor %}</tbody></table></div></section>
+<aside>
+<section class="panel people-panel"><h2>Players Used</h2><p><strong>Total players used:</strong> {{ stats.total_players_used }}</p></section>
+<section class="panel people-panel"><h2>Debutants</h2><p><strong>Debuts:</strong> {{ stats.debut_count }} ({{ '%.1f' % stats.debut_pct }}%)</p><p>Players whose first recorded appearance was this season.</p>{% if stats.debutants %}<div class="player-links"><span class="visually-hidden">Debutants list:</span>{% for name in stats.debutants %}<a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a>{% endfor %}</div>{% else %}<p>No recorded debuts this season.</p>{% endif %}</section>
+<section class="panel people-panel"><h2>Leavers</h2><p><strong>Leavers:</strong> {{ stats.leavers_count }} ({{ '%.1f' % stats.leavers_pct }}%)</p><p>Players recorded in {{ stats.previous_season or 'the previous season' }} but not this season.</p>{% if stats.leavers %}<div class="player-links"><span class="visually-hidden">Leavers list:</span>{% for name in stats.leavers %}<a href="{{ url_for('main.player_view') }}?name={{ name|urlencode }}">{{ name }}</a>{% endfor %}</div>{% else %}<p>No leavers identified.</p>{% endif %}</section>
+</aside></div>
+<section class="panel"><h2>Matches</h2><div class="table-responsive"><table class="table table-hover responsive-table"><caption class="visually-hidden">Matches in {{ stats.season }}</caption><thead><tr><th>Date</th><th>Opposition</th><th>Location</th><th>Result</th><th>GF</th><th>GA</th></tr></thead><tbody>{% for m in stats.match_list %}<tr data-href="{{ url_for('main.match_view', match_id=m.id) }}"><td data-label="Date">{{ m.date.strftime('%d/%m/%Y') }}</td><td data-label="Opposition">{{ m.opposition }}</td><td data-label="Location">{{ m.location }}</td><td data-label="Result"><span class="status-badge status-{{ m.result|lower if m.result else 'draw' }}">{{ m.result or 'Unknown' }}</span></td><td data-label="GF">{{ m.guildford_points if m.guildford_points is not none else 'N/A' }}</td><td data-label="GA">{{ m.opposition_points if m.opposition_points is not none else 'N/A' }}</td></tr>{% endfor %}</tbody></table></div></section>
 {% endblock %}
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"
-  integrity="sha512-tPy_M51goDsoXk/AeMKNjs2IeH7ifQ30Jv9p/p0o5C5d+9p/aor8f6ss6/oD/Gf/Q0a/V2agbJk2/vVd29X/Vw=="
-  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="{{ url_for('static', filename='season.js') }}?v=1"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js" integrity="sha512-tPy_M51goDsoXk/AeMKNjs2IeH7ifQ30Jv9p/p0o5C5d+9p/aor8f6ss6/oD/Gf/Q0a/V2agbJk2/vVd29X/Vw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="{{ url_for('static', filename='season.js') }}?v=2"></script>
 {% endblock %}

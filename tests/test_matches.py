@@ -36,7 +36,7 @@ def test_player_profile_shows_seasons_played(client, match_factory, appearance_f
     response = client.get("/player?name=Profile%20Player")
 
     assert response.status_code == 200
-    assert b"Seasons played:</strong> 1" in response.data
+    assert b"Seasons played:</strong></dt><dd>1</dd>" in response.data
 
 
 def test_season_summary_omits_shirt_distribution(client, match_factory, appearance_factory):
@@ -63,7 +63,8 @@ def test_season_summary_lists_debutants(client, match_factory, appearance_factor
     assert response.status_code == 200
     assert b"Debutants list:" in response.data
     assert response.data.index(b"Amy Debutant") < response.data.index(b"Zoe Debutant")
-    assert b"Established Player</a>," not in response.data.split(b"Debutants list:", 1)[1].split(b"</p>", 1)[0]
+    debutants = response.data.split(b"Debutants list:", 1)[1].split(b"</div>", 1)[0]
+    assert b"Established Player" not in debutants
     assert b"/player?name=Amy%20Debutant" in response.data
 
 
@@ -76,6 +77,6 @@ def test_season_summary_links_leavers_to_player_profiles(client, match_factory, 
     response = client.get("/season?season=2025-26")
 
     assert response.status_code == 200
-    leavers = response.data.split(b"Leavers list:", 1)[1].split(b"</p>", 1)[0]
+    leavers = response.data.split(b"Leavers list:", 1)[1].split(b"</div>", 1)[0]
     assert b"/player?name=Former%20Player" in leavers
     assert b">Former Player</a>" in leavers
