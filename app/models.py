@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import CheckConstraint, UniqueConstraint
 
@@ -49,6 +49,17 @@ class Match(db.Model):
         ),
         UniqueConstraint("source_provider", "external_match_id", name="uq_match_source_external_id"),
     )
+
+    @property
+    def awaiting_imported_score(self):
+        """An imported fixture that has been played but has no score from the source yet."""
+        return bool(
+            self.source_provider
+            and self.guildford_points is None
+            and self.opposition_points is None
+            and self.fixture_status in {"scheduled", "unknown"}
+            and self.date <= date.today()
+        )
 
 
 class Appearance(db.Model):

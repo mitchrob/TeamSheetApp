@@ -158,6 +158,14 @@ def edit_match(match_id):
         return render_template("edit.html", match=match, values=values, players=players, squad_size=squad_size)
 
     data, players, values, errors = _validate_and_prepare_form()
+    entered_score = None
+    if match.awaiting_imported_score and data.get("guildford_points") is not None:
+        entered_score = {
+            "result": data["result"],
+            "guildford_points": data["guildford_points"],
+            "opposition_points": data["opposition_points"],
+            "fixture_status": "completed",
+        }
     if match.source_provider:
         data.update(
             {
@@ -171,6 +179,8 @@ def edit_match(match_id):
                 "opposition_points": match.opposition_points,
             }
         )
+        if entered_score:
+            data.update(entered_score)
     if errors:
         for error in errors:
             flash(error, "error")
@@ -182,7 +192,12 @@ def edit_match(match_id):
         for field, value in data.items():
             setattr(match, field, value)
         _replace_appearances(match, players)
-        _record_audit("edit", "match", match.id, f"Edited match against {match.opposition}")
+        description = f"Edited match against {match.opposition}"
+        if entered_score:
+            description += (
+                f"; entered score {entered_score['guildford_points']}-{entered_score['opposition_points']}"
+            )
+        _record_audit("edit", "match", match.id, description)
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()

@@ -7,8 +7,19 @@
   <details class="form-section" open>
     <summary><span>Match details</span><small>Date, opposition and result</small></summary>
     {% if imported %}
-    <div class="section-content"><div class="alert alert-info mb-3">Fixture details and scores are managed by the RFU import. You can still update every player position.{% if match.source_url %} <a href="{{ match.source_url }}" target="_blank" rel="noopener">View on England Rugby</a>.{% endif %}</div><dl class="fixture-details-grid"><div><dt>Date</dt><dd>{{ match.date.strftime('%d/%m/%Y') }}</dd></div><div><dt>Opposition</dt><dd>{{ match.opposition }}</dd></div><div><dt>Competition</dt><dd>{{ match.league or 'Not supplied' }}</dd></div><div><dt>Location</dt><dd>{{ match.location }}</dd></div><div><dt>Status</dt><dd>{{ match.fixture_status|title }}</dd></div><div><dt>Score</dt><dd>{{ match.guildford_points if match.guildford_points is not none else '—' }}–{{ match.opposition_points if match.opposition_points is not none else '—' }}</dd></div></dl></div>
-    <input type="hidden" name="league" value="{{ values.league }}"><input type="hidden" name="season" value="{{ values.season }}"><input type="hidden" name="date" value="{{ values.date }}"><input type="hidden" name="opposition" value="{{ values.opposition }}"><input type="hidden" name="location" value="{{ values.location }}"><input type="hidden" name="result" value="{{ values.result }}"><input type="hidden" name="guildford_points" value="{{ values.guildford_points }}"><input type="hidden" name="opposition_points" value="{{ values.opposition_points }}">
+    <div class="section-content"><div class="alert alert-info mb-3">Fixture details{% if not match.awaiting_imported_score %} and scores{% endif %} are managed by the RFU import. You can still update every player position.{% if match.source_url %} <a href="{{ match.source_url }}" target="_blank" rel="noopener">View on England Rugby</a>.{% endif %}</div><dl class="fixture-details-grid"><div><dt>Date</dt><dd>{{ match.date.strftime('%d/%m/%Y') }}</dd></div><div><dt>Opposition</dt><dd>{{ match.opposition }}</dd></div><div><dt>Competition</dt><dd>{{ match.league or 'Not supplied' }}</dd></div><div><dt>Location</dt><dd>{{ match.location }}</dd></div><div><dt>Status</dt><dd>{{ match.fixture_status|title }}</dd></div><div><dt>Score</dt><dd>{{ match.guildford_points if match.guildford_points is not none else '—' }}–{{ match.opposition_points if match.opposition_points is not none else '—' }}</dd></div></dl></div>
+    <input type="hidden" name="league" value="{{ values.league }}"><input type="hidden" name="season" value="{{ values.season }}"><input type="hidden" name="date" value="{{ values.date }}"><input type="hidden" name="opposition" value="{{ values.opposition }}"><input type="hidden" name="location" value="{{ values.location }}">
+    {% if match.awaiting_imported_score %}
+    <div class="section-content">
+      <div class="alert alert-warning mb-3">The RFU import has not supplied a score for this match. Enter the final score to record the result.</div>
+      <div class="form-grid">
+        <div><label class="form-label" for="guildford_points">Guildford points</label><input class="form-control" type="number" min="0" max="999" id="guildford_points" name="guildford_points" value="{{ values.guildford_points }}"></div>
+        <div><label class="form-label" for="opposition_points">Opposition points</label><input class="form-control" type="number" min="0" max="999" id="opposition_points" name="opposition_points" value="{{ values.opposition_points }}"></div>
+      </div>
+    </div>
+    {% else %}
+    <input type="hidden" name="result" value="{{ values.result }}"><input type="hidden" name="guildford_points" value="{{ values.guildford_points }}"><input type="hidden" name="opposition_points" value="{{ values.opposition_points }}">
+    {% endif %}
     {% else %}
     <div class="form-grid section-content">
       <div><label class="form-label" for="league">League</label><input class="form-control" id="league" name="league" maxlength="100" value="{{ values.league }}"></div>

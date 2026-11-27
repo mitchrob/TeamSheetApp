@@ -9,7 +9,9 @@ from app.models import Appearance, AuditEvent, FixtureSyncRun, Match
 from app.services import compute_season_stats
 
 
-def _snapshot(*, opposition="Weybridge Vandals", score=None, status="scheduled", match_id="1290636"):
+def _snapshot(
+    *, opposition="Weybridge Vandals", score=None, status="scheduled", match_id="1290636", match_date="2026-09-26"
+):
     return {
         "source": "rfu-page",
         "season": "2026-27",
@@ -18,7 +20,7 @@ def _snapshot(*, opposition="Weybridge Vandals", score=None, status="scheduled",
             {
                 "external_match_id": match_id,
                 "season": "2026-27",
-                "date": "2026-09-26",
+                "date": match_date,
                 "league": "Regional 2 South Central",
                 "opposition": opposition,
                 "location": "Away",
@@ -136,7 +138,7 @@ def test_invalid_snapshot_is_atomic(client):
 
 
 def test_imported_fields_are_locked_but_teamsheet_is_editable(client, login):
-    _post_snapshot(client, _snapshot(), run_id="initial")
+    _post_snapshot(client, _snapshot(score=(7, 34), status="completed"), run_id="initial")
     run = FixtureSyncRun.query.one()
     login()
     client.post(f"/admin/fixtures/{run.id}/approve", data={f"item_{run.items[0].id}": "create"})
@@ -160,7 +162,70 @@ def test_imported_fields_are_locked_but_teamsheet_is_editable(client, login):
     assert match.opposition == "Weybridge Vandals"
     assert match.league == "Regional 2 South Central"
     assert match.date == date(2026, 9, 26)
+    assert (match.guildford_points, match.opposition_points, match.result) == (7, 34, "Loss")
     assert [appearance.player.name for appearance in match.appearances] == ["New Player"]
+
+
+def _import_single_fixture(client, login, **snapshot_kwargs):
+    _post_snapshot(client, _snapshot(**snapshot_kwargs), run_id="initial")
+    run = FixtureSyncRun.query.one()
+    login()
+    client.post(f"/admin/fixtures/{run.id}/approve", data={f"item_{run.items[0].id}": "create"})
+    return Match.query.one()
+
+
+def _imported_edit_form(**overrides):
+    form = {
+        "league": "Forged League",
+        "season": "2030-31",
+        "date": "2030-01-01",
+        "opposition": "Forged Opposition",
+        "location": "Home",
+        "player1": "New Player",
+    }
+    form.update(overrides)
+    return form
+
+
+def test_admin_can_enter_score_for_played_unscored_import(client, login):
+    match = _import_single_fixture(client, login)
+    page = client.get(f"/edit/{match.id}")
+    assert b'id="guildford_points"' in page.data
+
+    response = client.post(
+        f"/edit/{match.id}", data=_imported_edit_form(guildford_points="7", opposition_points="34")
+    )
+    assert response.status_code == 302
+    db.session.refresh(match)
+    assert (match.guildford_points, match.opposition_points) == (7, 34)
+    assert match.result == "Loss"
+    assert match.fixture_status == "completed"
+    assert match.opposition == "Weybridge Vandals"
+    assert match.location == "Away"
+    assert match.date == date(2026, 9, 26)
+    audit = AuditEvent.query.filter_by(action="edit").one()
+    assert "entered score 7-34" in audit.description
+    assert compute_season_stats("2026-27") is not None
+
+
+def test_blank_score_leaves_unscored_import_scheduled(client, login):
+    match = _import_single_fixture(client, login)
+    response = client.post(f"/edit/{match.id}", data=_imported_edit_form())
+    assert response.status_code == 302
+    db.session.refresh(match)
+    assert match.guildford_points is None
+    assert match.fixture_status == "scheduled"
+
+
+def test_score_cannot_be_entered_for_future_import(client, login):
+    match = _import_single_fixture(client, login, match_date="2099-09-26")
+    page = client.get(f"/edit/{match.id}")
+    assert b'id="guildford_points"' not in page.data
+
+    client.post(f"/edit/{match.id}", data=_imported_edit_form(guildford_points="7", opposition_points="34"))
+    db.session.refresh(match)
+    assert match.guildford_points is None
+    assert match.fixture_status == "scheduled"
 
 
 def test_scheduled_fixtures_are_public_but_excluded_from_stats(client, login):
