@@ -4,6 +4,20 @@
 <p class="mb-4"><a href="{{ url_for('main.stats') }}">← Back to players</a></p>
 <header class="page-header"><div class="profile-heading"><span class="player-monogram" aria-hidden="true">{{ stats.name[:1] }}</span><div><h1>{{ stats.name }}</h1><div class="profile-dates"><span><strong>1st appearance:</strong> {{ stats.first_date.strftime('%d/%m/%Y') if stats.first_date else 'Unknown' }}</span><span><strong>Most recent:</strong> {{ stats.last_date.strftime('%d/%m/%Y') if stats.last_date else 'Unknown' }}</span></div></div></div></header>
 <dl class="metric-strip panel">{% for label, value in [('Appearances',stats.total),('Starts',stats.starts),('Bench',stats.bench),('Seasons played',stats.seasons_played),('Win rate','%.1f%%' % stats.win_pct)] %}<div class="metric"><dt><strong>{{ label }}:</strong></dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+<section class="panel" aria-labelledby="season-chart-heading">
+  <h2 id="season-chart-heading">Appearances by season</h2>
+  <p class="panel-subtitle mb-3">Every club season since {{ stats.name }}'s first. Empty slots are seasons without an appearance.</p>
+  <ol class="season-chart">
+    {% for s in stats.by_season %}
+    <li class="season-column{% if not s.count %} season-column-empty{% endif %}" title="{{ s.season }}: {{ s.count }} of {{ s.club_matches }} matches">
+      <span class="season-count" aria-hidden="true">{{ s.count }}</span>
+      <span class="season-bar-track" aria-hidden="true"><span class="season-bar" style="height: {{ '%.1f' % s.height_pct }}%"></span></span>
+      <span class="season-label" aria-hidden="true">{{ s.label }}</span>
+      <span class="visually-hidden">{{ s.season }}: {{ s.count }} of {{ s.club_matches }} matches</span>
+    </li>
+    {% endfor %}
+  </ol>
+</section>
 <div class="clubhouse-grid"><section class="panel"><h2>Appearance history</h2><p class="panel-subtitle mb-3">All teamsheets containing {{ stats.name }}.</p>
 <div class="table-responsive">
   <table class="table table-hover responsive-table">

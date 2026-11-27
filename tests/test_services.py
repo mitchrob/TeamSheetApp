@@ -1,5 +1,6 @@
 from datetime import date
 
+from app.extensions import db
 from app.services import (
     _collect_seasons,
     canonicalize_season,
@@ -61,3 +62,30 @@ def test_player_stats_count_distinct_seasons(app, match_factory, appearance_fact
         appearance_factory(match, "Multi Season Player")
 
     assert get_player_stats("Multi Season Player")["seasons_played"] == 2
+
+
+def test_player_season_timeline_shows_gaps_and_departure(app, match_factory, appearance_factory):
+    before = match_factory(season="2021-22", match_date=date(2021, 9, 4), opposition="Before Debut")
+    debut = match_factory(season="2022-23", match_date=date(2022, 9, 3), opposition="Debut")
+    second = match_factory(season="2022-23", match_date=date(2022, 9, 10), opposition="Second")
+    match_factory(season="2023-24", match_date=date(2023, 9, 2), opposition="Missed")
+    comeback = match_factory(season="2024-25", match_date=date(2024, 9, 7), opposition="Comeback")
+    match_factory(season="2025-26", match_date=date(2025, 9, 6), opposition="After Leaving")
+    match_factory(season="2025-26", match_date=date(2025, 9, 13), opposition="After Leaving Again")
+    upcoming = match_factory(season="2026-27", match_date=date(2026, 9, 5), opposition="Upcoming")
+    upcoming.fixture_status = "scheduled"
+    db.session.commit()
+    appearance_factory(before, "Someone Else")
+    for match in (debut, second, comeback):
+        appearance_factory(match, "Timeline Player")
+
+    timeline = get_player_stats("Timeline Player")["by_season"]
+
+    assert [(s["season"], s["count"], s["club_matches"]) for s in timeline] == [
+        ("2022-23", 2, 2),
+        ("2023-24", 0, 1),
+        ("2024-25", 1, 1),
+        ("2025-26", 0, 2),
+    ]
+    assert [s["height_pct"] for s in timeline] == [100.0, 0.0, 50.0, 0.0]
+    assert timeline[0]["label"] == "22-23"

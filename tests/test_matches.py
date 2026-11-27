@@ -80,3 +80,20 @@ def test_season_summary_links_leavers_to_player_profiles(client, match_factory, 
     leavers = response.data.split(b"Leavers list:", 1)[1].split(b"</div>", 1)[0]
     assert b"/player?name=Former%20Player" in leavers
     assert b">Former Player</a>" in leavers
+
+
+def test_player_profile_shows_appearances_by_season_chart(client, match_factory, appearance_factory):
+    first = match_factory(season="2023-24", match_date=date(2023, 9, 2), opposition="First")
+    match_factory(season="2024-25", match_date=date(2024, 9, 7), opposition="Missed")
+    third = match_factory(season="2025-26", match_date=date(2025, 9, 6), opposition="Third")
+    appearance_factory(first, "Chart Player")
+    appearance_factory(third, "Chart Player")
+
+    response = client.get("/player?name=Chart%20Player")
+
+    assert response.status_code == 200
+    assert b"Appearances by season" in response.data
+    assert response.data.count(b'<li class="season-column') == 3
+    assert response.data.count(b"season-column-empty") == 1
+    assert b"2024-25: 0 of 1 matches" in response.data
+    assert b"2025-26: 1 of 1 matches" in response.data

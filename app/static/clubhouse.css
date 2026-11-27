@@ -91,6 +91,16 @@ h2 { font-size: 1.3rem; margin-bottom: 1rem; }
 .shirt-bar-label { display: flex; justify-content: space-between; gap: .5rem; font-size: .83rem; margin-bottom: .6rem; }
 .shirt-bar { height: 9px; background: #edf0f5; border-radius: 3px; overflow: hidden; }
 .shirt-bar span { display: block; height: 100%; background: #d4ad48; }
+.season-chart { display: flex; align-items: stretch; gap: clamp(2px, .6vw, 8px); list-style: none; margin: 0; padding: 0; }
+.season-column { flex: 1 1 0; min-width: 0; max-width: 56px; display: flex; flex-direction: column; align-items: center; gap: .35rem; }
+.season-count { font-size: .75rem; font-weight: 700; color: #0c2341; font-variant-numeric: tabular-nums; line-height: 1; }
+.season-bar-track { width: 100%; height: 150px; display: flex; align-items: flex-end; border-bottom: 2px solid #c9d1dc; }
+.season-bar { display: block; width: 100%; min-height: 2px; background: #d4ad48; border-radius: 3px 3px 0 0; }
+.season-column-empty .season-count { color: #9aa7b8; font-weight: 500; }
+.season-column-empty .season-bar-track { background: repeating-linear-gradient(-45deg, transparent 0 4px, #f0f2f6 4px 8px); }
+.season-column-empty .season-bar { background: transparent; }
+.season-label { font-size: .7rem; color: var(--text-muted); white-space: nowrap; writing-mode: vertical-rl; transform: rotate(180deg); font-variant-numeric: tabular-nums; }
+@media (max-width: 576px) { .season-count { font-size: .62rem; letter-spacing: -.02em; } .season-label { font-size: .62rem; } }
 .score-hero { background: white; color: #0c2341; border: 1px solid var(--club-border); border-radius: 8px; }
 .score-hero h2, .score-hero p { color: #0c2341; }
 .dataTables_wrapper { border: 1px solid var(--club-border); border-radius: 8px; padding: 1.2rem; }

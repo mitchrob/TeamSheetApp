@@ -203,6 +203,7 @@ def get_player_stats(name):
         == "Win"
     )
     shirt_counts = Counter(appearance.position for appearance in appearances)
+    season_counts = Counter(appearance.match.season for appearance in appearances)
 
     return {
         "name": name,
@@ -217,8 +218,36 @@ def get_player_stats(name):
             {"num": number, "count": count, "pct": count / total * 100.0}
             for number, count in sorted(shirt_counts.items())
         ],
+        "by_season": _season_timeline(season_counts),
         "appearances": appearances,
     }
+
+
+def _season_timeline(season_counts):
+    """Appearances per club season, from the player's first season to the club's latest.
+
+    Seasons the club played without the player are included with a count of zero, so
+    breaks and departures are visible. Seasons with no played club matches are omitted.
+    """
+    club_matches = dict(
+        db.session.query(Match.season, db.func.count(Match.id))
+        .filter(Match.fixture_status.notin_(("scheduled", "postponed", "cancelled")))
+        .group_by(Match.season)
+        .all()
+    )
+    first_season = min(season_counts)
+    seasons = sorted(season for season in club_matches if season >= first_season)
+    peak = max(season_counts.values())
+    return [
+        {
+            "season": season,
+            "label": season[2:],
+            "count": season_counts.get(season, 0),
+            "club_matches": club_matches[season],
+            "height_pct": season_counts.get(season, 0) / peak * 100.0,
+        }
+        for season in seasons
+    ]
 
 
 def find_potential_duplicates(player_names_to_check, all_player_names, threshold=90):
