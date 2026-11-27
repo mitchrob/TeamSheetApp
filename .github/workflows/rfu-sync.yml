@@ -1,9 +1,8 @@
 name: RFU fixture sync
 
 on:
-  schedule:
-    - cron: "0 8 * * 0"
-      timezone: "UTC"
+  # The weekly schedule was removed: englandrugby.com's CloudFront bot protection
+  # blocks the headless browser with a 403, so every scheduled run failed.
   workflow_dispatch:
     inputs:
       season:

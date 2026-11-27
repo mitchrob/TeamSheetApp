@@ -75,7 +75,7 @@ The initial migration can create a fresh database or upgrade the original schema
 
 ## RFU fixture synchronization
 
-The `RFU fixture sync` GitHub Actions workflow runs nightly and can also be started manually from the repository's Actions page. It renders the public RFU page in Chromium, validates every match, and sends one signed snapshot to the app. Browser failures and RFU page changes fail closed; they never send a partial snapshot.
+The `RFU fixture sync` GitHub Actions workflow runs only when started manually from the repository's Actions page. Its weekly schedule was removed in November 2026 because englandrugby.com's CloudFront bot protection blocks the scraper's browser with a 403 error. Until that changes, enter scores for played imported fixtures on each match's edit page; the score fields appear only while an imported fixture has been played and has no score. The workflow renders the public RFU page in Chromium, validates every match, and sends one signed snapshot to the app. Browser failures and RFU page changes fail closed; they never send a partial snapshot.
 
 Configure the following repository settings:
 
@@ -83,7 +83,7 @@ Configure the following repository settings:
 - Repository variable `RFU_SYNC_URL`, set to the production URL ending in `/internal/rfu-sync`.
 - PythonAnywhere `RFU_GITHUB_WORKFLOW_URL`, set to the workflow's GitHub page if administrators should see a direct “Run workflow” link.
 
-After deployment, run the workflow once with `dry_run` enabled. If it succeeds, run it normally and review the proposed current-season reconciliation under **Admin → RFU fixture sync**. Once approved, later runs update imported fixtures automatically by their RFU match ID. Imported fixture details are read-only, while teamsheets remain editable. Manual match creation remains available for friendlies and RFU omissions.
+After deployment, run the workflow once with `dry_run` enabled. If it succeeds, run it normally and review the proposed current-season reconciliation under **Admin → RFU fixture sync**. Once approved, later runs update imported fixtures automatically by their RFU match ID. Imported fixture details are read-only, apart from entering a missing score, while teamsheets remain editable. Manual match creation remains available for friendlies and RFU omissions.
 
 To test the scraper locally without sending data:
 
