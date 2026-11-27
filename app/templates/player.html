@@ -41,8 +41,8 @@
         <td data-label="Opposition">{{ a.match.opposition }}</td>
         <td data-label="Location">{{ a.match.location }}</td>
         <td data-label="Result"><span class="status-badge status-{{ a.match.result|lower if a.match.result else 'draw' }}">{{ a.match.result or 'Unknown' }}</span></td>
-        <td data-label="Score">{{ a.match.guildford_points if a.match.guildford_points is not none else 'N/A' }} - {{
-          a.match.opposition_points if a.match.opposition_points is not none else 'N/A' }}</td>
+        <td data-label="Score">{{ a.match.guildford_points if a.match.guildford_points is not none else '—' }} - {{
+          a.match.opposition_points if a.match.opposition_points is not none else '—' }}</td>
         <td data-label="Position">
           {{ a.position }}
           {% if a.position > 15 %}
