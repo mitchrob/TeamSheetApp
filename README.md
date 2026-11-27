@@ -137,7 +137,7 @@ Tests use isolated SQLite databases and do not modify `app.db`.
 
 ## PythonAnywhere deployment
 
-Use a Python 3.13 web app and virtual environment named `teamsheetapp`. Configure the production environment variables in the WSGI file before creating the application:
+Use a Python 3.13 web app and virtual environment named `teamsheetapp-prod`. Configure the production environment variables in the WSGI file before creating the application:
 
 ```python
 import os
@@ -167,7 +167,7 @@ Before deploying, confirm that the latest off-site Backblaze backup succeeded. T
 ```bash
 cd ~/TeamSheetApp
 git pull --ff-only origin main
-source ~/.virtualenvs/teamsheetapp/bin/activate
+source ~/.virtualenvs/teamsheetapp-prod/bin/activate
 python -m pip install -r requirements.txt
 python -m flask --app run db upgrade
 ```
